@@ -9,7 +9,7 @@ const api = axios.create({
 
 export class MeshService {
   
-  // Get MeshConnect link token for authentication
+  // Get MeshConnect link token for CEX (Coinbase)
   static async getLinkToken(): Promise<string> {
     try {
       const response = await api.get('/link-token');
@@ -17,6 +17,17 @@ export class MeshService {
     } catch (error) {
       console.error('Error getting link token:', error);
       throw new Error('Failed to get MeshConnect link token');
+    }
+  }
+
+  // Get MeshConnect link token for self-custody wallet (Rainbow)
+  static async getWalletLinkToken(): Promise<string> {
+    try {
+      const response = await api.get('/link-token-wallet');
+      return response.data.linkToken;
+    } catch (error) {
+      console.error('Error getting wallet link token:', error);
+      throw new Error('Failed to get wallet link token');
     }
   }
 
@@ -73,6 +84,17 @@ export class MeshService {
     } catch (error) {
       console.error('Error getting transfers:', error);
       throw new Error('Failed to get transfer history');
+    }
+  }
+
+  // Get app wallet address
+  static async getAppWalletAddress(): Promise<string> {
+    try {
+      const response = await axios.get('/api/wallet-address');
+      return response.data.address;
+    } catch (error) {
+      console.error('Error getting app wallet address:', error);
+      throw new Error('Failed to get app wallet address');
     }
   }
 } 
