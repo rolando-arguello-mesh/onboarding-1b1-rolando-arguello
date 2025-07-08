@@ -1,11 +1,11 @@
 # 🔗 Mesh Integration Demo
 
-A comprehensive React TypeScript application that integrates with MeshConnect to connect Coinbase and Rainbow Wallet, display portfolios, and execute USDC transfers on the Base network.
+A comprehensive React TypeScript application that integrates with MeshConnect to connect Coinbase and Phantom Wallet, display portfolios, and execute USDC transfers on the Base network.
 
 ## ✨ Features
 
 - **Coinbase Integration**: Connect to Coinbase account (CEX)
-- **Rainbow Wallet Integration**: Connect to Rainbow Wallet (Self-custody)
+- **Phantom Wallet Integration**: Connect to Phantom Wallet (Self-custody)
 - **Portfolio Display**: View cryptocurrency holdings from both connections
 - **Transfer Functionality**: Move $5 USDC from accounts to app wallet
 - **Base Network**: All transfers execute on the Base network
@@ -107,7 +107,7 @@ npm run dev
 5. Transfer status updates in real-time
 
 ### Self-Custody Wallet Transfer
-1. User connects Rainbow Wallet (or compatible self-custody wallet)
+1. User connects Phantom Wallet (or compatible self-custody wallet)
 2. System retrieves portfolio on Base network
 3. User initiates $5 worth of USDC transfer
 4. Transfer executes on Base network
@@ -133,7 +133,7 @@ npm run dev
 
 ## 📱 Usage
 
-1. **Connect Accounts**: Use the connection buttons to link your Coinbase and Rainbow Wallet
+1. **Connect Accounts**: Use the connection buttons to link your Coinbase and Phantom Wallet
 2. **View Portfolio**: See your cryptocurrency holdings from both accounts
 3. **Execute Transfers**: Use the transfer buttons to move $5 USDC to the app wallet
 4. **Monitor Status**: Track transfer progress and history

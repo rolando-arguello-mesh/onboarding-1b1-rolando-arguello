@@ -73,7 +73,7 @@ function App() {
     }
   };
 
-  // Handle Rainbow Wallet connection
+  // Handle Phantom Wallet connection
   const handleConnectWallet = async () => {
     setLoading(true);
     setError(null);
@@ -87,7 +87,7 @@ function App() {
       // Simulate connection
       const connection: MeshConnection = {
         id: 'wallet_connection_' + Date.now(),
-        provider: 'rainbow',
+        provider: 'phantom',
         type: 'self_custody',
         connected: true,
         accounts: []
@@ -101,7 +101,7 @@ function App() {
       }, 1000);
       
     } catch (err) {
-      setError('Failed to connect to Rainbow Wallet');
+      setError('Failed to connect to Phantom Wallet');
     } finally {
       setLoading(false);
     }
@@ -117,59 +117,61 @@ function App() {
     }
   };
 
-  // Load transfers for a connection
-  const loadTransfers = async (connectionId: string) => {
-    try {
-      const transferHistory = await MeshService.getTransfers(connectionId);
-      setTransfers(transferHistory);
-    } catch (err) {
-      console.error('Failed to load transfers:', err);
-    }
-  };
-
-  // Execute transfer from Coinbase
+  // Handle transfer from Coinbase
   const handleTransferFromCoinbase = async () => {
     if (!connections.coinbase) return;
     
     setLoading(true);
+    setError(null);
+    
     try {
       const transfer = await MeshService.executeTransfer(
         connections.coinbase.id,
         appWalletAddress,
-        5, // $5 USDC
+        5,
         'USDC',
         'base'
       );
       
       setTransfers(prev => [transfer, ...prev]);
+      
       // Refresh portfolio after transfer
-      loadPortfolio(connections.coinbase.id, 'coinbase');
+      setTimeout(() => {
+        loadPortfolio(connections.coinbase!.id, 'coinbase');
+      }, 2000);
+      
     } catch (err) {
-      setError('Failed to execute Coinbase transfer');
+      setError('Failed to transfer from Coinbase');
     } finally {
       setLoading(false);
     }
   };
 
-  // Execute transfer from wallet
+  // Handle transfer from Wallet
   const handleTransferFromWallet = async () => {
     if (!connections.wallet) return;
     
     setLoading(true);
+    setError(null);
+    
     try {
       const transfer = await MeshService.executeTransfer(
         connections.wallet.id,
         appWalletAddress,
-        5, // $5 worth of USDC
+        5,
         'USDC',
         'base'
       );
       
       setTransfers(prev => [transfer, ...prev]);
+      
       // Refresh portfolio after transfer
-      loadPortfolio(connections.wallet.id, 'wallet');
+      setTimeout(() => {
+        loadPortfolio(connections.wallet!.id, 'wallet');
+      }, 2000);
+      
     } catch (err) {
-      setError('Failed to execute wallet transfer');
+      setError('Failed to transfer from Wallet');
     } finally {
       setLoading(false);
     }
@@ -180,7 +182,7 @@ function App() {
       <div className="container">
         <header className="header">
           <h1>🔗 Mesh Integration Demo</h1>
-          <p>Connect your Coinbase and Rainbow Wallet to manage your crypto</p>
+          <p>Connect your Coinbase and Phantom Wallet to manage your crypto</p>
         </header>
 
         {error && (
@@ -225,16 +227,16 @@ function App() {
               )}
             </div>
 
-            {/* Rainbow Wallet Connection */}
+            {/* Phantom Wallet Connection */}
             <div className="connection-card">
-              <h3>🌈 Rainbow Wallet (Self-Custody)</h3>
+              <h3>👻 Phantom Wallet (Self-Custody)</h3>
               {!connections.wallet ? (
                 <button 
                   className="connect-btn wallet-btn"
                   onClick={handleConnectWallet}
                   disabled={loading}
                 >
-                  {loading ? 'Connecting...' : 'Connect Rainbow Wallet'}
+                  {loading ? 'Connecting...' : 'Connect Phantom Wallet'}
                 </button>
               ) : (
                 <div className="connected-state">
@@ -278,7 +280,7 @@ function App() {
               {/* Wallet Portfolio */}
               {portfolios.wallet && (
                 <div className="portfolio-card">
-                  <h3>🌈 Rainbow Wallet Portfolio</h3>
+                  <h3>👻 Phantom Wallet Portfolio</h3>
                   <div className="portfolio-value">
                     ${portfolios.wallet.totalValue.toFixed(2)}
                   </div>

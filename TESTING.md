@@ -90,7 +90,7 @@ server/
   - Interacciones de usuario
   - Manejo de estados
   - Gestión de errores
-  - Conexiones Coinbase y Rainbow Wallet
+  - Conexiones Coinbase y Phantom Wallet
   - Funcionalidad de transfers
 
 - **meshService.test.ts** (200+ líneas)

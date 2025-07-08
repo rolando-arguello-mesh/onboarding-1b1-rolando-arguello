@@ -150,15 +150,15 @@ describe('TypeScript Types and Interfaces', () => {
     test('should create valid self-custody connection', () => {
       const connection: MeshConnection = {
         id: 'wallet_456',
-        provider: 'rainbow',
+        provider: 'phantom',
         type: 'self_custody',
-        connected: false,
+        connected: true,
         accounts: []
       };
 
-      expect(connection.provider).toBe('rainbow');
+      expect(connection.provider).toBe('phantom');
       expect(connection.type).toBe('self_custody');
-      expect(connection.connected).toBe(false);
+      expect(connection.connected).toBe(true);
     });
 
     test('should handle connections with accounts', () => {

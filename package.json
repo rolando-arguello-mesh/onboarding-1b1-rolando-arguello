@@ -35,7 +35,7 @@
     "ts-jest": "^29.4.0"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "PORT=3000 react-scripts start",
     "build": "react-scripts build",
     "test": "jest",
     "test:watch": "jest --watch",

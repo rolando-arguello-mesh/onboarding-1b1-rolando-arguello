@@ -20,7 +20,7 @@ export class MeshService {
     }
   }
 
-  // Get MeshConnect link token for self-custody wallet (Rainbow)
+  // Get MeshConnect link token for self-custody wallet (Phantom)
   static async getWalletLinkToken(): Promise<string> {
     try {
       const response = await api.get('/link-token-wallet');

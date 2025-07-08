@@ -4,7 +4,7 @@ const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3005;
+const PORT = 3005; // Fixed port for backend server
 
 // TODO: Set these environment variables in your .env file
 const MESH_CLIENT_ID = process.env.MESH_CLIENT_ID || 'your_mesh_client_id';
@@ -46,12 +46,13 @@ app.get('/api/mesh/link-token', async (req, res) => {
   }
 });
 
-// Get link token for self-custody wallet (Rainbow)
+// Get link token for self-custody wallet (Phantom)
 app.get('/api/mesh/link-token-wallet', async (req, res) => {
   try {
     const response = await meshAPI.post('/api/v1/linktoken', {
       userId: 'user_wallet_' + Date.now(),
-      brokerType: 'metamask', // Using metamask as base for wallet connections
+      // Basic authentication - allows user to choose any wallet including Phantom
+      // No brokerType needed - this will show the full catalogue of self-custody wallets
     });
     
     res.json({ linkToken: response.data.content.linkToken });

@@ -38,16 +38,16 @@ describe('App Component', () => {
       render(<App />);
       
       expect(screen.getByText('🔗 Mesh Integration Demo')).toBeInTheDocument();
-      expect(screen.getByText('Connect your Coinbase and Rainbow Wallet to manage your crypto')).toBeInTheDocument();
+      expect(screen.getByText('Connect your Coinbase and Phantom Wallet to manage your crypto')).toBeInTheDocument();
     });
 
     test('renders connection cards', () => {
       render(<App />);
       
       expect(screen.getByText('🏦 Coinbase (CEX)')).toBeInTheDocument();
-      expect(screen.getByText('🌈 Rainbow Wallet (Self-Custody)')).toBeInTheDocument();
+      expect(screen.getByText('👻 Phantom Wallet (Self-Custody)')).toBeInTheDocument();
       expect(screen.getByText('Connect Coinbase')).toBeInTheDocument();
-      expect(screen.getByText('Connect Rainbow Wallet')).toBeInTheDocument();
+      expect(screen.getByText('Connect Phantom Wallet')).toBeInTheDocument();
     });
 
     test('renders app wallet address section', () => {
@@ -115,11 +115,11 @@ describe('App Component', () => {
     });
   });
 
-  describe('Rainbow Wallet Connection', () => {
+  describe('Phantom Wallet Connection', () => {
     test('handles wallet connection successfully', async () => {
       render(<App />);
       
-      const connectButton = screen.getByText('Connect Rainbow Wallet');
+      const connectButton = screen.getByText('Connect Phantom Wallet');
       
       await act(async () => {
         fireEvent.click(connectButton);
@@ -133,7 +133,7 @@ describe('App Component', () => {
     test('shows loading state during wallet connection', async () => {
       render(<App />);
       
-      const connectButton = screen.getByText('Connect Rainbow Wallet');
+      const connectButton = screen.getByText('Connect Phantom Wallet');
       fireEvent.click(connectButton);
       
       // Buscar el botón de wallet específico que está en estado loading
@@ -146,11 +146,11 @@ describe('App Component', () => {
       
       render(<App />);
       
-      const connectButton = screen.getByText('Connect Rainbow Wallet');
+      const connectButton = screen.getByText('Connect Phantom Wallet');
       fireEvent.click(connectButton);
       
       await waitFor(() => {
-        expect(screen.getByText('Failed to connect to Rainbow Wallet')).toBeInTheDocument();
+        expect(screen.getByText('Failed to connect to Phantom Wallet')).toBeInTheDocument();
       });
     });
   });
@@ -209,7 +209,7 @@ describe('App Component', () => {
       render(<App />);
       
       const coinbaseButton = screen.getByRole('button', { name: /connect coinbase/i });
-      const walletButton = screen.getByRole('button', { name: /connect rainbow wallet/i });
+      const walletButton = screen.getByRole('button', { name: /connect phantom wallet/i });
       
       expect(coinbaseButton).toBeInTheDocument();
       expect(walletButton).toBeInTheDocument();
