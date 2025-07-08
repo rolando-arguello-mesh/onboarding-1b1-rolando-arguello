@@ -11,7 +11,7 @@ const api = axios.create({
 });
 
 // Get client ID from environment or use default
-const MESH_CLIENT_ID = process.env.REACT_APP_MESH_CLIENT_ID || 'cd2ee500-013f-47b2-38e6-08ddb8d45bc6';
+const MESH_CLIENT_ID = process.env.MESH_CLIENT_ID || 'cd2ee500-013f-47b2-38e6-08ddb8d45bc6';
 
 export class MeshService {
   
