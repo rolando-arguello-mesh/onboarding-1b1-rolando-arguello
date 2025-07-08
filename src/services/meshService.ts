@@ -1,11 +1,17 @@
 import axios from 'axios';
 import { MeshAccount, MeshPortfolio, MeshTransfer } from '../types';
 
+// Import MeshConnect SDK
+import { createLink } from '@meshconnect/web-link-sdk';
+
 // Base API client
 const api = axios.create({
-  baseURL: '/api/mesh',
+  baseURL: 'http://localhost:3005/api/mesh',
   timeout: 10000,
 });
+
+// Get client ID from environment or use default
+const MESH_CLIENT_ID = process.env.REACT_APP_MESH_CLIENT_ID || 'cd2ee500-013f-47b2-38e6-08ddb8d45bc6';
 
 export class MeshService {
   
@@ -28,6 +34,141 @@ export class MeshService {
     } catch (error) {
       console.error('Error getting wallet link token:', error);
       throw new Error('Failed to get wallet link token');
+    }
+  }
+
+  // Store connection data after successful authentication
+  static async storeConnection(connectionId: string, accessToken: any, accountData?: any): Promise<void> {
+    try {
+      await api.post('/store-connection', {
+        connectionId,
+        accessToken,
+        accountData
+      });
+      console.log('✅ Connection stored successfully');
+    } catch (error) {
+      console.error('❌ Error storing connection:', error);
+      throw new Error('Failed to store connection data');
+    }
+  }
+
+  // Open MeshConnect for Coinbase
+  static async openCoinbaseConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
+    try {
+      const linkToken = await this.getLinkToken();
+      
+      return new Promise((resolve) => {
+        const link = createLink({
+          clientId: MESH_CLIENT_ID,
+          onIntegrationConnected: async (payload) => {
+            console.log('Coinbase connected successfully:', payload);
+            // Check if accessToken exists and extract connection info
+            if (payload.accessToken) {
+              const accessToken = payload.accessToken as any;
+              const connectionId = accessToken.accountId || accessToken.account_id || accessToken.id || 'connection_' + Date.now();
+              
+              try {
+                // Store the connection data for future API calls
+                await this.storeConnection(connectionId, accessToken, payload);
+                
+                resolve({ 
+                  success: true, 
+                  connectionId: connectionId 
+                });
+              } catch (error) {
+                console.error('Error storing connection:', error);
+                resolve({ 
+                  success: false, 
+                  error: 'Failed to store connection data' 
+                });
+              }
+            } else {
+              resolve({ 
+                success: false, 
+                error: 'No access token received' 
+              });
+            }
+          },
+          onTransferFinished: (payload) => {
+            console.log('Transfer finished:', payload);
+          },
+          onExit: (error, summary) => {
+            console.log('Connection closed:', error, summary);
+            resolve({ 
+              success: false, 
+              error: error || 'User closed connection' 
+            });
+          },
+          onEvent: (event) => {
+            console.log('MeshConnect event:', event);
+          }
+        });
+        
+        link.openLink(linkToken);
+      });
+    } catch (error) {
+      console.error('Error opening Coinbase connection:', error);
+      return { success: false, error: 'Failed to open connection' };
+    }
+  }
+
+  // Open MeshConnect for Phantom Wallet
+  static async openWalletConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
+    try {
+      const linkToken = await this.getWalletLinkToken();
+      
+      return new Promise((resolve) => {
+        const link = createLink({
+          clientId: MESH_CLIENT_ID,
+          onIntegrationConnected: async (payload) => {
+            console.log('Wallet connected successfully:', payload);
+            // Check if accessToken exists and extract connection info
+            if (payload.accessToken) {
+              const accessToken = payload.accessToken as any;
+              const connectionId = accessToken.accountId || accessToken.account_id || accessToken.id || 'wallet_' + Date.now();
+              
+              try {
+                // Store the connection data for future API calls
+                await this.storeConnection(connectionId, accessToken, payload);
+                
+                resolve({ 
+                  success: true, 
+                  connectionId: connectionId 
+                });
+              } catch (error) {
+                console.error('Error storing connection:', error);
+                resolve({ 
+                  success: false, 
+                  error: 'Failed to store connection data' 
+                });
+              }
+            } else {
+              resolve({ 
+                success: false, 
+                error: 'No access token received' 
+              });
+            }
+          },
+          onTransferFinished: (payload) => {
+            console.log('Transfer finished:', payload);
+          },
+          onExit: (error, summary) => {
+            console.log('Connection closed:', error, summary);
+            resolve({ 
+              success: false, 
+              error: error || 'User closed connection' 
+            });
+          },
+          onEvent: (event) => {
+            console.log('MeshConnect event:', event);
+          }
+        });
+        
+        link.openLink(linkToken);
+      });
+    } catch (error) {
+      console.error('Error opening wallet connection:', error);
+      return { success: false, error: 'Failed to open connection' };
     }
   }
 
@@ -90,7 +231,7 @@ export class MeshService {
   // Get app wallet address
   static async getAppWalletAddress(): Promise<string> {
     try {
-      const response = await axios.get('/api/wallet-address');
+      const response = await axios.get('http://localhost:3005/api/wallet-address');
       return response.data.address;
     } catch (error) {
       console.error('Error getting app wallet address:', error);

@@ -44,29 +44,34 @@ function App() {
     setError(null);
     
     try {
-      const linkToken = await MeshService.getLinkToken();
+      console.log('Opening Coinbase connection...');
+      const result = await MeshService.openCoinbaseConnection();
       
-      // For demo purposes, we'll simulate a connection
-      // In a real app, this would integrate with the Mesh SDK
-      console.log('Coinbase link token:', linkToken);
-      
-      // Simulate connection
-      const connection: MeshConnection = {
-        id: 'coinbase_connection_' + Date.now(),
-        provider: 'coinbase',
-        type: 'cex',
-        connected: true,
-        accounts: []
-      };
-      
-      setConnections(prev => ({ ...prev, coinbase: connection }));
-      
-      // Load portfolio after connection
-      setTimeout(() => {
-        loadPortfolio(connection.id, 'coinbase');
-      }, 1000);
+      if (result.success && result.connectionId) {
+        // Real connection successful
+        const connection: MeshConnection = {
+          id: result.connectionId,
+          provider: 'coinbase',
+          type: 'cex',
+          connected: true,
+          accounts: []
+        };
+        
+        setConnections(prev => ({ ...prev, coinbase: connection }));
+        
+        // Load portfolio after connection
+        setTimeout(() => {
+          loadPortfolio(connection.id, 'coinbase');
+        }, 1000);
+        
+        console.log('Coinbase connected successfully with ID:', result.connectionId);
+      } else {
+        // Connection failed
+        setError(result.error || 'Failed to connect to Coinbase');
+      }
       
     } catch (err) {
+      console.error('Error connecting to Coinbase:', err);
       setError('Failed to connect to Coinbase');
     } finally {
       setLoading(false);
@@ -79,28 +84,34 @@ function App() {
     setError(null);
     
     try {
-      const linkToken = await MeshService.getWalletLinkToken();
+      console.log('Opening Phantom Wallet connection...');
+      const result = await MeshService.openWalletConnection();
       
-      // For demo purposes, we'll simulate a connection
-      console.log('Wallet link token:', linkToken);
-      
-      // Simulate connection
-      const connection: MeshConnection = {
-        id: 'wallet_connection_' + Date.now(),
-        provider: 'phantom',
-        type: 'self_custody',
-        connected: true,
-        accounts: []
-      };
-      
-      setConnections(prev => ({ ...prev, wallet: connection }));
-      
-      // Load portfolio after connection
-      setTimeout(() => {
-        loadPortfolio(connection.id, 'wallet');
-      }, 1000);
+      if (result.success && result.connectionId) {
+        // Real connection successful
+        const connection: MeshConnection = {
+          id: result.connectionId,
+          provider: 'phantom',
+          type: 'self_custody',
+          connected: true,
+          accounts: []
+        };
+        
+        setConnections(prev => ({ ...prev, wallet: connection }));
+        
+        // Load portfolio after connection
+        setTimeout(() => {
+          loadPortfolio(connection.id, 'wallet');
+        }, 1000);
+        
+        console.log('Phantom Wallet connected successfully with ID:', result.connectionId);
+      } else {
+        // Connection failed
+        setError(result.error || 'Failed to connect to Phantom Wallet');
+      }
       
     } catch (err) {
+      console.error('Error connecting to Phantom Wallet:', err);
       setError('Failed to connect to Phantom Wallet');
     } finally {
       setLoading(false);
@@ -110,10 +121,62 @@ function App() {
   // Load portfolio for a connection
   const loadPortfolio = async (connectionId: string, type: 'coinbase' | 'wallet') => {
     try {
+      console.log(`🔄 Loading ${type} portfolio for connection:`, connectionId);
       const portfolio = await MeshService.getPortfolio(connectionId);
       setPortfolios(prev => ({ ...prev, [type]: portfolio }));
-    } catch (err) {
-      console.error(`Failed to load ${type} portfolio:`, err);
+      console.log(`✅ ${type} portfolio loaded successfully`);
+      
+      // Clear any existing errors if portfolio loads successfully
+      setError(null);
+      
+    } catch (err: any) {
+      console.error(`❌ Failed to load ${type} portfolio:`, err);
+      
+      // Check if this is a real connection error vs missing connection
+      if (err.message?.includes('Failed to get portfolio information')) {
+        // This means we have a connection but the API call failed
+        // Show demo data with a clear message
+        setError(`Unable to load real ${type} data. Showing demo portfolio below.`);
+        
+        const demoPortfolio = {
+          accounts: [
+            {
+              id: `demo_${type}_btc`,
+              name: 'Bitcoin',
+              type: 'crypto' as const,
+              balance: type === 'coinbase' ? 0.05 : 0.025,
+              currency: 'BTC',
+              network: 'bitcoin',
+              provider: type === 'coinbase' ? 'coinbase' : 'phantom',
+            },
+            {
+              id: `demo_${type}_eth`,
+              name: 'Ethereum',
+              type: 'crypto' as const,
+              balance: type === 'coinbase' ? 1.2 : 0.8,
+              currency: 'ETH',
+              network: 'ethereum',
+              provider: type === 'coinbase' ? 'coinbase' : 'phantom',
+            },
+            {
+              id: `demo_${type}_usdc`,
+              name: 'USD Coin',
+              type: 'crypto' as const,
+              balance: type === 'coinbase' ? 1000 : 500,
+              currency: 'USDC',
+              network: 'ethereum',
+              provider: type === 'coinbase' ? 'coinbase' : 'phantom',
+            },
+          ],
+          totalValue: type === 'coinbase' ? 4500.50 : 2750.25,
+          lastUpdated: new Date().toISOString(),
+        };
+        
+        setPortfolios(prev => ({ ...prev, [type]: demoPortfolio }));
+      } else {
+        // Some other error occurred
+        setError(`Failed to connect ${type}. Please try again.`);
+      }
     }
   };
 
@@ -187,7 +250,11 @@ function App() {
 
         {error && (
           <div className="error-message">
-            {error}
+            <div>
+              <strong>⚠️ {error}</strong>
+              <br />
+              <small>Using demo data for now. The portfolio below shows example values.</small>
+            </div>
             <button onClick={() => setError(null)}>✕</button>
           </div>
         )}
@@ -212,16 +279,20 @@ function App() {
                   onClick={handleConnectCoinbase}
                   disabled={loading}
                 >
-                  {loading ? 'Connecting...' : 'Connect Coinbase'}
+                  {loading ? 'Opening MeshConnect...' : 'Connect Coinbase'}
                 </button>
               ) : (
                 <div className="connected-state">
                   <p>✅ Connected</p>
+                  <div className="connection-id">
+                    ID: {connections.coinbase.id}
+                  </div>
                   <button 
                     className="refresh-btn"
                     onClick={() => loadPortfolio(connections.coinbase!.id, 'coinbase')}
+                    disabled={loading}
                   >
-                    Refresh Portfolio
+                    {loading ? 'Refreshing...' : 'Refresh Portfolio'}
                   </button>
                 </div>
               )}
@@ -236,16 +307,20 @@ function App() {
                   onClick={handleConnectWallet}
                   disabled={loading}
                 >
-                  {loading ? 'Connecting...' : 'Connect Phantom Wallet'}
+                  {loading ? 'Opening MeshConnect...' : 'Connect Phantom Wallet'}
                 </button>
               ) : (
                 <div className="connected-state">
                   <p>✅ Connected</p>
+                  <div className="connection-id">
+                    ID: {connections.wallet.id}
+                  </div>
                   <button 
                     className="refresh-btn"
                     onClick={() => loadPortfolio(connections.wallet!.id, 'wallet')}
+                    disabled={loading}
                   >
-                    Refresh Portfolio
+                    {loading ? 'Refreshing...' : 'Refresh Portfolio'}
                   </button>
                 </div>
               )}
@@ -257,6 +332,12 @@ function App() {
         {(portfolios.coinbase || portfolios.wallet) && (
           <div className="portfolio-section">
             <h2>Your Portfolio</h2>
+            
+            {/* Demo Notice */}
+            <div className="demo-notice">
+              <p>📊 <strong>Demo Data:</strong> Showing example portfolio data. Connect real wallets to see actual balances.</p>
+            </div>
+            
             <div className="portfolio-grid">
               
               {/* Coinbase Portfolio */}

@@ -176,6 +176,17 @@ body {
   font-weight: 600;
 }
 
+.connection-id {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: #718096;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  word-break: break-all;
+}
+
 .refresh-btn {
   background: linear-gradient(45deg, #48bb78, #38a169);
   color: white;
@@ -186,11 +197,12 @@ body {
   font-size: 0.9rem;
   font-weight: 600;
   transition: all 0.3s ease;
+  width: 100%;
 }
 
-.refresh-btn:hover {
-  background: linear-gradient(45deg, #38a169, #2f855a);
-  transform: translateY(-2px);
+.refresh-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .portfolio-section,
@@ -205,6 +217,23 @@ body {
   color: #2d3748;
   margin-bottom: 20px;
   font-size: 1.8rem;
+}
+
+.demo-notice {
+  background: linear-gradient(45deg, #ffd93d, #ffb347);
+  color: #2d3748;
+  padding: 15px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(255, 217, 61, 0.3);
+  border: 2px solid rgba(255, 183, 71, 0.5);
+}
+
+.demo-notice p {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .portfolio-grid {

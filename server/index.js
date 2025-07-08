@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const app = express();
 const PORT = 3005; // Fixed port for backend server
@@ -13,8 +14,14 @@ const MESH_BASE_URL = process.env.MESH_BASE_URL || 'https://integration-api.mesh
 const APP_WALLET_ADDRESS = process.env.APP_WALLET_ADDRESS || '0x1234567890123456789012345678901234567890';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3002', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(express.json());
+
+// In-memory storage for access tokens (in production, use a proper database)
+const connectedAccounts = new Map();
 
 // Mesh API client
 const meshAPI = axios.create({
@@ -31,33 +38,36 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'Server is running', timestamp: new Date().toISOString() });
 });
 
-// Get MeshConnect link token
+// Get MeshConnect link token for Coinbase
 app.get('/api/mesh/link-token', async (req, res) => {
   try {
     const response = await meshAPI.post('/api/v1/linktoken', {
-      userId: 'user_' + Date.now(),
-      brokerType: 'coinbase', // Default to Coinbase, can be changed
+      userId: 'user_coinbase_' + Date.now(),
+      integrationId: '9226e5c2-ebc3-4fdd-94f6-ed52cdce1420', // Coinbase integration ID
+      restrictMultipleAccounts: true
     });
     
+    console.log('✅ Coinbase link token generated successfully');
     res.json({ linkToken: response.data.content.linkToken });
   } catch (error) {
-    console.error('Error generating link token:', error.response?.data || error.message);
+    console.error('❌ Error generating Coinbase link token:', error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to generate link token' });
   }
 });
 
-// Get link token for self-custody wallet (Phantom)
+// Get link token for self-custody wallets
 app.get('/api/mesh/link-token-wallet', async (req, res) => {
   try {
     const response = await meshAPI.post('/api/v1/linktoken', {
       userId: 'user_wallet_' + Date.now(),
-      // Basic authentication - allows user to choose any wallet including Phantom
-      // No brokerType needed - this will show the full catalogue of self-custody wallets
+      // No integrationId to show all available wallets including Phantom
+      restrictMultipleAccounts: true
     });
     
+    console.log('✅ Wallet link token generated successfully');
     res.json({ linkToken: response.data.content.linkToken });
   } catch (error) {
-    console.error('Error generating wallet link token:', error.response?.data || error.message);
+    console.error('❌ Error generating wallet link token:', error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to generate wallet link token' });
   }
 });
@@ -90,31 +100,59 @@ app.post('/api/mesh/portfolio', async (req, res) => {
   try {
     const { connectionId } = req.body;
     
-    const response = await meshAPI.get(`/api/v1/holdings/get/${connectionId}`);
+    // Check if we have this connection stored
+    const connectionData = connectedAccounts.get(connectionId);
+    
+    if (!connectionData) {
+      console.log('⚠️ Connection not found for ID:', connectionId);
+      return res.status(404).json({ error: 'Connection not found. Please reconnect your account.' });
+    }
+    
+    console.log('📊 Getting portfolio for connection:', connectionId);
+    
+    // Use the real access token to get holdings
+    const response = await meshAPI.get(`/api/v1/holdings/get/${connectionData.accessToken}`);
     const holdings = response.data.content.holdings;
     
+    console.log('✅ Holdings retrieved successfully:', holdings.length, 'items');
+    
     const accounts = holdings.map(holding => ({
-      id: holding.accountId,
+      id: holding.accountId || holding.id,
       name: holding.symbol,
       type: 'crypto',
-      balance: holding.quantity,
+      balance: holding.quantity || holding.balance,
       currency: holding.symbol,
       network: holding.network,
-      provider: holding.brokerType,
+      provider: connectionData.accountData?.brokerType || 'unknown',
     }));
     
-    const totalValue = holdings.reduce((sum, holding) => sum + (holding.quantity * holding.price), 0);
+    const totalValue = holdings.reduce((sum, holding) => {
+      const price = holding.price || holding.priceUsd || 0;
+      const quantity = holding.quantity || holding.balance || 0;
+      return sum + (quantity * price);
+    }, 0);
     
-    res.json({
-      portfolio: {
-        accounts,
-        totalValue,
-        lastUpdated: new Date().toISOString(),
-      }
-    });
+    const portfolio = {
+      accounts,
+      totalValue,
+      lastUpdated: new Date().toISOString(),
+    };
+    
+    console.log('📈 Portfolio calculated - Total value:', totalValue);
+    res.json({ portfolio });
+    
   } catch (error) {
-    console.error('Error getting portfolio:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to get portfolio' });
+    console.error('❌ Error getting portfolio:', error.response?.data || error.message);
+    
+    // If it's an authentication error, suggest reconnection
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      res.status(401).json({ 
+        error: 'Authentication expired. Please reconnect your account.',
+        requiresReconnection: true 
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to get portfolio' });
+    }
   }
 });
 
@@ -178,6 +216,38 @@ app.post('/api/mesh/transfers', async (req, res) => {
 // Get app wallet address
 app.get('/api/wallet-address', (req, res) => {
   res.json({ address: APP_WALLET_ADDRESS });
+});
+
+// Store access token after successful connection
+app.post('/api/mesh/store-connection', async (req, res) => {
+  try {
+    const { connectionId, accessToken, accountData } = req.body;
+    
+    // Store the connection data
+    connectedAccounts.set(connectionId, {
+      connectionId,
+      accessToken,
+      accountData,
+      connectedAt: new Date().toISOString()
+    });
+    
+    console.log('✅ Connection stored successfully:', connectionId);
+    res.json({ success: true, message: 'Connection stored successfully' });
+  } catch (error) {
+    console.error('❌ Error storing connection:', error);
+    res.status(500).json({ error: 'Failed to store connection' });
+  }
+});
+
+// Get stored connections
+app.get('/api/mesh/connections', async (req, res) => {
+  try {
+    const connections = Array.from(connectedAccounts.values());
+    res.json({ connections });
+  } catch (error) {
+    console.error('❌ Error getting connections:', error);
+    res.status(500).json({ error: 'Failed to get connections' });
+  }
 });
 
 app.listen(PORT, () => {
