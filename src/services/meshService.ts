@@ -204,6 +204,17 @@ export class MeshService {
     }
   }
 
+  // Get cryptocurrency balances for any connected account
+  static async getCryptoBalances(connectionId: string): Promise<any> {
+    try {
+      const response = await api.post('/crypto-balances', { connectionId });
+      return response.data;
+    } catch (error) {
+      console.error('Error getting crypto balances:', error);
+      throw new Error('Failed to get crypto balances');
+    }
+  }
+
   // Get complete balance information from Coinbase (multiple endpoints)
   static async getCoinbaseCompleteBalance(): Promise<any> {
     try {

@@ -11,7 +11,7 @@ const PORT = 3005; // Fixed port for backend server
 const MESH_CLIENT_ID = process.env.MESH_CLIENT_ID || 'your_mesh_client_id';
 const MESH_CLIENT_SECRET = process.env.MESH_CLIENT_SECRET || 'your_mesh_client_secret';
 const MESH_BASE_URL = process.env.MESH_BASE_URL || 'https://integration-api.meshconnect.com';
-const APP_WALLET_ADDRESS = process.env.APP_WALLET_ADDRESS || '0x1234567890123456789012345678901234567890';
+const APP_WALLET_ADDRESS = process.env.APP_WALLET_ADDRESS || '0xb4437EC792d9aa41ab91f48eF9BF517fFbcaFAD2';
 
 // Middleware
 app.use(cors({
@@ -1093,6 +1093,152 @@ app.get('/api/mesh/coinbase-usdc', async (req, res) => {
   } catch (error) {
     console.error('❌ COINBASE USDC ERROR:', error);
     res.status(500).json({ error: 'Failed to get Coinbase USDC balance' });
+  }
+});
+
+// Get cryptocurrency balances for any connected account
+app.post('/api/mesh/crypto-balances', async (req, res) => {
+  try {
+    const { connectionId } = req.body;
+    
+    console.log('🪙 CRYPTO BALANCES REQUEST - connectionId:', connectionId);
+    
+    // Check if we have this connection stored
+    const connectionData = connectedAccounts.get(connectionId);
+    
+    if (!connectionData) {
+      console.log('⚠️ Connection not found for crypto balances request');
+      return res.status(404).json({ error: 'Connection not found. Please reconnect your account.' });
+    }
+    
+    // Extract the access token and broker info
+    const realAccessToken = connectionData.accessToken?.accountTokens?.[0]?.accessToken;
+    const brokerType = connectionData.accessToken?.brokerType;
+    const brokerName = connectionData.accessToken?.brokerName;
+    
+    console.log('🪙 CRYPTO BALANCES - brokerType:', brokerType, 'brokerName:', brokerName);
+    
+    if (!realAccessToken) {
+      console.log('⚠️ No access token found for crypto balances');
+      return res.status(400).json({ error: 'No access token found' });
+    }
+    
+    try {
+      console.log('🪙 GETTING CRYPTO BALANCES FOR', brokerType, '...');
+      
+      // Make the API call to Mesh Connect
+      const response = await meshAPI.post('/api/v1/holdings/get', {
+        authToken: realAccessToken,
+        type: brokerType,
+        includeMarketValue: true
+      });
+      
+      console.log('🪙 MESH API RESPONSE STATUS:', response.status);
+      
+      // Extract cryptocurrency positions from the response
+      const content = response.data.content || {};
+      const cryptoPositions = content.cryptocurrencyPositions || [];
+      
+      console.log('🪙 TOTAL CRYPTOCURRENCY POSITIONS FOUND:', cryptoPositions.length);
+      console.log('🪙 CRYPTOCURRENCYPOSITIONS CONTENT FOR', brokerType, ':');
+      
+      // Process all cryptocurrency positions
+      let totalCryptoValue = 0;
+      const cryptoBalances = [];
+      
+      cryptoPositions.forEach((position, index) => {
+        const symbol = position.symbol?.trim() || 'UNKNOWN';
+        const name = position.name?.trim() || position.symbol || 'Unknown';
+        const amount = parseFloat(position.amount || 0);
+        const marketValue = parseFloat(position.marketValue || 0);
+        const lastPrice = parseFloat(position.lastPrice || 0);
+        const costBasis = parseFloat(position.costBasis || 0);
+        
+        totalCryptoValue += marketValue;
+        
+        // Log each position clearly
+        console.log(`  ${index + 1}. ${symbol} (${name})`);
+        console.log(`     Amount: ${amount}`);
+        console.log(`     Market Value: $${marketValue.toFixed(2)}`);
+        console.log(`     Last Price: $${lastPrice.toFixed(2)}`);
+        console.log(`     Cost Basis: $${costBasis.toFixed(2)}`);
+        console.log(`     P&L: $${(marketValue - costBasis).toFixed(2)}`);
+        console.log(`     Network: ${position.network || 'N/A'}`);
+        console.log(`     ---`);
+        
+        cryptoBalances.push({
+          symbol: symbol,
+          name: name,
+          amount: amount,
+          marketValue: marketValue,
+          lastPrice: lastPrice,
+          costBasis: costBasis,
+          pnl: marketValue - costBasis,
+          network: position.network || 'unknown',
+          accountId: position.accountId || 'unknown',
+          // Formatted values for display
+          formattedAmount: `${amount.toFixed(6)} ${symbol}`,
+          formattedValue: `$${marketValue.toFixed(2)}`,
+          formattedPrice: `$${lastPrice.toFixed(2)}`,
+          formattedPnL: `$${(marketValue - costBasis).toFixed(2)}`,
+          // Additional data from API
+          rawPosition: position
+        });
+      });
+      
+      console.log('🪙 TOTAL CRYPTO PORTFOLIO VALUE: $', totalCryptoValue.toFixed(2));
+      console.log('🪙 TOTAL CRYPTO POSITIONS COUNT:', cryptoBalances.length);
+      
+      // Also log any other types of positions for reference
+      const equityPositions = content.equityPositions || [];
+      const nftPositions = content.nftPositions || [];
+      const optionPositions = content.optionPositions || [];
+      
+      console.log('📊 PORTFOLIO BREAKDOWN:');
+      console.log(`  - Cryptocurrency Positions: ${cryptoPositions.length}`);
+      console.log(`  - Equity Positions: ${equityPositions.length}`);
+      console.log(`  - NFT Positions: ${nftPositions.length}`);
+      console.log(`  - Option Positions: ${optionPositions.length}`);
+      
+      // If no crypto positions found, show the full response structure
+      if (cryptoPositions.length === 0) {
+        console.log('🪙 NO CRYPTO POSITIONS FOUND - Full response structure:');
+        console.log(JSON.stringify(response.data, null, 2));
+      }
+      
+      res.json({
+        success: true,
+        connectionId: connectionId,
+        brokerType: brokerType,
+        brokerName: brokerName,
+        summary: {
+          totalCryptoValue: totalCryptoValue,
+          totalPositions: cryptoBalances.length,
+          formattedTotalValue: `$${totalCryptoValue.toFixed(2)}`
+        },
+        cryptocurrencyPositions: cryptoBalances,
+        otherPositions: {
+          equityCount: equityPositions.length,
+          nftCount: nftPositions.length,
+          optionCount: optionPositions.length
+        },
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (apiError) {
+      console.error('❌ CRYPTO BALANCES API ERROR:', apiError.message);
+      console.error('❌ CRYPTO BALANCES API DETAILS:', apiError.response?.data || apiError);
+      
+      res.status(500).json({
+        error: 'Failed to get cryptocurrency balances',
+        message: apiError.message,
+        details: apiError.response?.data || null
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ CRYPTO BALANCES ERROR:', error);
+    res.status(500).json({ error: 'Failed to get cryptocurrency balances' });
   }
 });
 
