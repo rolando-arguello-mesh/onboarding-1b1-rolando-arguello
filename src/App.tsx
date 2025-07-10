@@ -3,7 +3,7 @@ import { MeshService } from './services/meshService';
 import { MeshConnection, MeshPortfolio, MeshTransfer } from './types';
 import './App.css';
 
-// Simplified single-button app
+// App with separate buttons for Coinbase and Phantom Wallet
 
 function App() {
   const [connection, setConnection] = useState<MeshConnection | null>(null);
@@ -26,20 +26,60 @@ function App() {
     loadWalletAddress();
   }, []);
 
-  // Handle wallet connection
-  const handleConnect = async () => {
+  // Handle Coinbase connection
+  const handleConnectCoinbase = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('Opening wallet connection...');
+      console.log('Opening Coinbase connection...');
+      const result = await MeshService.openCoinbaseConnection();
+      
+      if (result.success && result.connectionId) {
+        // Real connection successful
+        const newConnection: MeshConnection = {
+          id: result.connectionId,
+          provider: 'coinbase',
+          type: 'cex',
+          connected: true,
+          accounts: []
+        };
+        
+        setConnection(newConnection);
+        
+        // Load portfolio after connection
+        setTimeout(() => {
+          loadPortfolio(newConnection.id);
+        }, 1000);
+        
+        console.log('Coinbase connected successfully with ID:', result.connectionId);
+      } else {
+        // Connection failed
+        setError(result.error || 'Failed to connect to Coinbase');
+      }
+      
+    } catch (err) {
+      console.error('Error connecting to Coinbase:', err);
+      setError('Failed to connect to Coinbase');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Phantom Wallet connection
+  const handleConnectPhantom = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('Opening Phantom Wallet connection...');
       const result = await MeshService.openWalletConnection();
       
       if (result.success && result.connectionId) {
         // Real connection successful
         const newConnection: MeshConnection = {
           id: result.connectionId,
-          provider: 'wallet',
+          provider: 'phantom',
           type: 'self_custody',
           connected: true,
           accounts: []
@@ -52,15 +92,15 @@ function App() {
           loadPortfolio(newConnection.id);
         }, 1000);
         
-        console.log('Wallet connected successfully with ID:', result.connectionId);
+        console.log('Phantom Wallet connected successfully with ID:', result.connectionId);
       } else {
         // Connection failed
-        setError(result.error || 'Failed to connect wallet');
+        setError(result.error || 'Failed to connect to Phantom Wallet');
       }
       
     } catch (err) {
-      console.error('Error connecting wallet:', err);
-      setError('Failed to connect wallet');
+      console.error('Error connecting to Phantom Wallet:', err);
+      setError('Failed to connect to Phantom Wallet');
     } finally {
       setLoading(false);
     }
@@ -84,36 +124,37 @@ function App() {
       if (err.message?.includes('Failed to get portfolio information')) {
         // This means we have a connection but the API call failed
         // Show demo data with a clear message
-        setError(`Unable to load real wallet data. Showing demo portfolio below.`);
+        const provider = connection?.provider || 'wallet';
+        setError(`Unable to load real ${provider} data. Showing demo portfolio below.`);
         
         const demoPortfolio = {
           accounts: [
             {
-              id: `demo_wallet_btc`,
+              id: `demo_${provider}_btc`,
               name: 'Bitcoin',
               type: 'crypto' as const,
               balance: 0.025,
               currency: 'BTC',
               network: 'bitcoin',
-              provider: 'wallet',
+              provider: provider,
             },
             {
-              id: `demo_wallet_eth`,
+              id: `demo_${provider}_eth`,
               name: 'Ethereum',
               type: 'crypto' as const,
               balance: 0.8,
               currency: 'ETH',
               network: 'ethereum',
-              provider: 'wallet',
+              provider: provider,
             },
             {
-              id: `demo_wallet_usdc`,
+              id: `demo_${provider}_usdc`,
               name: 'USD Coin',
               type: 'crypto' as const,
               balance: 500,
               currency: 'USDC',
               network: 'ethereum',
-              provider: 'wallet',
+              provider: provider,
             },
           ],
           totalValue: 2750.25,
@@ -123,7 +164,7 @@ function App() {
         setPortfolio(demoPortfolio);
       } else {
         // Some other error occurred
-        setError(`Failed to connect wallet. Please try again.`);
+        setError(`Failed to connect. Please try again.`);
       }
     }
   };
@@ -163,7 +204,7 @@ function App() {
       <div className="container">
         <header className="header">
           <h1>🔗 Mesh Wallet Integration</h1>
-          <p>Connect your crypto wallet to manage your portfolio</p>
+          <p>Connect your Coinbase account or Phantom Wallet to manage your portfolio</p>
         </header>
 
         {error && (
@@ -185,29 +226,42 @@ function App() {
         </div>
 
         <div className="connections-section">
-          <h2>Connect Your Wallet</h2>
+          <h2>Connect Your Account</h2>
           <div className="connection-center">
             {!connection ? (
-              <button 
-                className="connect-btn main-connect-btn"
-                onClick={handleConnect}
-                disabled={loading}
-              >
-                {loading ? 'Opening MeshConnect...' : '🔗 Connect Wallet'}
-              </button>
+              <div className="connect-buttons">
+                <button 
+                  className="connect-btn coinbase-btn"
+                  onClick={handleConnectCoinbase}
+                  disabled={loading}
+                >
+                  {loading ? 'Connecting...' : '🟡 Connect Coinbase'}
+                </button>
+                <button 
+                  className="connect-btn phantom-btn"
+                  onClick={handleConnectPhantom}
+                  disabled={loading}
+                >
+                  {loading ? 'Connecting...' : '👻 Connect Phantom'}
+                </button>
+              </div>
             ) : (
               <div className="connected-state">
                 <div className="connection-success">
-                  <h3>✅ Wallet Connected</h3>
-                  <div className="connection-id">
-                    Connection ID: {connection.id}
-                  </div>
+                  <div className="success-icon">✅</div>
+                  <h3>Connected to {connection.provider === 'coinbase' ? 'Coinbase' : 'Phantom Wallet'}</h3>
+                  <p>Connection ID: {connection.id}</p>
+                  <p>Type: {connection.type === 'cex' ? 'Centralized Exchange' : 'Self-Custody Wallet'}</p>
                   <button 
-                    className="refresh-btn"
-                    onClick={() => loadPortfolio(connection.id)}
-                    disabled={loading}
+                    className="disconnect-btn"
+                    onClick={() => {
+                      setConnection(null);
+                      setPortfolio(null);
+                      setTransfers([]);
+                      setError(null);
+                    }}
                   >
-                    {loading ? 'Refreshing...' : '🔄 Refresh Portfolio'}
+                    🔄 Connect Different Account
                   </button>
                 </div>
               </div>

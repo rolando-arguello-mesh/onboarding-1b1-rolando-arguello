@@ -108,6 +108,15 @@ body {
   margin-bottom: 30px;
 }
 
+/* New styles for the two buttons container */
+.connect-buttons {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .connection-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -135,21 +144,23 @@ body {
 }
 
 .connect-btn {
-  width: 100%;
-  padding: 15px;
+  min-width: 200px;
+  padding: 18px 32px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.5px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .connect-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  transform: none;
 }
 
 .coinbase-btn {
@@ -160,6 +171,18 @@ body {
 .coinbase-btn:hover:not(:disabled) {
   background: linear-gradient(45deg, #0041cc, #3367d6);
   transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(0, 82, 255, 0.3);
+}
+
+.phantom-btn {
+  background: linear-gradient(45deg, #AB9FF2, #9945FF);
+  color: white;
+}
+
+.phantom-btn:hover:not(:disabled) {
+  background: linear-gradient(45deg, #9C89F5, #8A3FFF);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(153, 69, 255, 0.3);
 }
 
 .wallet-btn {
@@ -189,7 +212,7 @@ body {
 
 .connected-state {
   text-align: center;
-  max-width: 400px;
+  max-width: 500px;
   margin: 0 auto;
 }
 
@@ -201,17 +224,40 @@ body {
   box-shadow: 0 10px 30px rgba(72, 187, 120, 0.2);
 }
 
-.connection-success h3 {
-  color: #38a169;
-  margin-bottom: 15px;
-  font-size: 1.3rem;
+.connection-success .success-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
 }
 
-.connected-state p {
-  font-size: 1.1rem;
-  color: #48bb78;
-  margin-bottom: 10px;
+.connection-success h3 {
+  color: #2d3748;
+  margin-bottom: 15px;
+  font-size: 1.4rem;
+}
+
+.connection-success p {
+  color: #4a5568;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.disconnect-btn {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 1rem;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+}
+
+.disconnect-btn:hover {
+  background: linear-gradient(45deg, #ff5252, #d32f2f);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
 }
 
 .connection-id {
@@ -512,6 +558,19 @@ body {
     min-width: auto;
   }
   
+  /* Mobile styles for connect buttons */
+  .connect-buttons {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .connect-btn {
+    width: 100%;
+    min-width: auto;
+    padding: 16px 24px;
+    font-size: 1rem;
+  }
+  
   .main-connect-btn {
     min-width: 200px;
     padding: 15px 25px;
@@ -526,5 +585,10 @@ body {
   
   .connection-success {
     padding: 20px;
+  }
+  
+  .disconnect-btn {
+    width: 100%;
+    padding: 14px 20px;
   }
 }
