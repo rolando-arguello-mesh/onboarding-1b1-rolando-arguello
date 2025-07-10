@@ -700,21 +700,56 @@ app.post('/api/mesh/transfer', async (req, res) => {
     
     // Step 2: Configure transfer
     const configurePayload = {
-      fromAuthToken: realAccessToken,  // Changed case to match docs
-      fromType: brokerType,           // Changed case to match docs
-      toAddresses: [{                 // Changed case to match docs
-        networkId: baseNetworkId,     // Changed case to match docs
-        symbol: currency,             // Changed case to match docs
-        address: toAddress || APP_WALLET_ADDRESS
+      FromAuthToken: realAccessToken,  // Correct PascalCase per docs
+      FromType: brokerType,           // Correct PascalCase per docs
+      ToAddresses: [{                 // Correct PascalCase per docs
+        NetworkId: baseNetworkId,     // Correct PascalCase per docs
+        Symbol: currency,             // Correct PascalCase per docs
+        Address: toAddress || APP_WALLET_ADDRESS  // Correct PascalCase per docs
       }]
     };
     
     console.log('📡 Configure payload:', JSON.stringify(configurePayload, null, 2));
     
-    const configureResponse = await meshAPI.post('/api/v1/transfers/managed/configure', configurePayload);
+    let configureResponse;
+    try {
+      configureResponse = await meshAPI.post('/api/v1/transfers/managed/configure', configurePayload);
+    } catch (configureError) {
+      console.error('❌ Configure API call failed:', configureError.message);
+      console.error('❌ Configure API error response:', JSON.stringify(configureError.response?.data, null, 2));
+      console.error('❌ Configure API error status:', configureError.response?.status);
+      
+      return res.status(500).json({ 
+        error: 'Configure API call failed',
+        message: configureError.message,
+        response: configureError.response?.data,
+        status: configureError.response?.status
+      });
+    }
 
     console.log('✅ Step 1 completed: Transfer configured');
-    console.log('🔍 Configure response structure:', JSON.stringify(configureResponse.data, null, 2));
+    console.log('🔍 Configure response status:', configureResponse.status);
+    console.log('🔍 Configure response statusText:', configureResponse.statusText);
+    console.log('🔍 Full Configure response:', JSON.stringify(configureResponse.data, null, 2));
+    
+    // Check if configure response indicates success
+    if (configureResponse.status !== 200) {
+      console.error('❌ Configure request failed with status:', configureResponse.status);
+      return res.status(500).json({ 
+        error: 'Configure request failed',
+        status: configureResponse.status,
+        response: configureResponse.data
+      });
+    }
+    
+    // Check if we have the expected structure
+    if (!configureResponse.data || !configureResponse.data.content) {
+      console.error('❌ Configure response missing content structure');
+      return res.status(500).json({ 
+        error: 'Invalid configure response structure', 
+        response: configureResponse.data 
+      });
+    }
     
     const holdings = configureResponse.data.content.holdings;
     
@@ -740,35 +775,84 @@ app.post('/api/mesh/transfer', async (req, res) => {
 
     // Step 3: Preview transfer
     const previewPayload = {
-      fromAuthToken: realAccessToken,    // Changed case to match docs
-      fromType: brokerType,             // Changed case to match docs
-      networkId: baseNetworkId,         // Changed case to match docs
-      symbol: currency,                 // Changed case to match docs
-      toAddress: toAddress || APP_WALLET_ADDRESS, // Changed case to match docs
-      amount: amount                    // Changed case to match docs
+      FromAuthToken: realAccessToken,   // Correct PascalCase per docs
+      FromType: brokerType,            // Correct PascalCase per docs
+      NetworkId: baseNetworkId,        // Correct PascalCase per docs
+      Symbol: currency,                // Correct PascalCase per docs
+      ToAddress: toAddress || APP_WALLET_ADDRESS, // Correct PascalCase per docs
+      Amount: amount                   // Correct PascalCase per docs
     };
     
     console.log('📡 Preview payload:', JSON.stringify(previewPayload, null, 2));
     
-    const previewResponse = await meshAPI.post('/api/v1/transfers/managed/preview', previewPayload);
+    let previewResponse;
+    try {
+      previewResponse = await meshAPI.post('/api/v1/transfers/managed/preview', previewPayload);
+    } catch (previewError) {
+      console.error('❌ Preview API call failed:', previewError.message);
+      console.error('❌ Preview API error response:', JSON.stringify(previewError.response?.data, null, 2));
+      console.error('❌ Preview API error status:', previewError.response?.status);
+      
+      return res.status(500).json({ 
+        error: 'Preview API call failed',
+        message: previewError.message,
+        response: previewError.response?.data,
+        status: previewError.response?.status
+      });
+    }
 
     console.log('✅ Step 2 completed: Transfer previewed');
-    console.log('🔍 Preview response structure:', JSON.stringify(previewResponse.data, null, 2));
+    console.log('🔍 Preview response status:', previewResponse.status);
+    console.log('🔍 Preview response statusText:', previewResponse.statusText);
+    console.log('🔍 Full Preview response:', JSON.stringify(previewResponse.data, null, 2));
+    
+    // Check if preview response indicates success
+    if (previewResponse.status !== 200) {
+      console.error('❌ Preview request failed with status:', previewResponse.status);
+      return res.status(500).json({ 
+        error: 'Preview request failed',
+        status: previewResponse.status,
+        response: previewResponse.data
+      });
+    }
 
     // Handle different possible response structures
-    let previewResult = previewResponse.data.PreviewResult || 
+    let previewResult = previewResponse.data.content?.previewResult || 
+                       previewResponse.data.previewResult || 
                        previewResponse.data.content || 
                        previewResponse.data;
     
     console.log('🔍 Preview result structure:', JSON.stringify(previewResult, null, 2));
     
-    const previewId = previewResult.PreviewId || 
-                     previewResult.previewId || 
-                     previewResult.id;
+    // Try to get PreviewId from the response - check all possible locations
+    const previewId = previewResult.previewId || 
+                     previewResult.PreviewId || 
+                     previewResult.id ||
+                     previewResponse.data.content?.previewResult?.previewId ||
+                     previewResponse.data.PreviewId ||
+                     previewResponse.data.previewId ||
+                     previewResponse.data.id;
+    
+    console.log('🔍 Searching for PreviewId in response:');
+    console.log('  - previewResult.PreviewId:', previewResult.PreviewId);
+    console.log('  - previewResult.previewId:', previewResult.previewId);
+    console.log('  - previewResult.id:', previewResult.id);
+    console.log('  - previewResponse.data.PreviewId:', previewResponse.data.PreviewId);
+    console.log('  - previewResponse.data.previewId:', previewResponse.data.previewId);
+    console.log('  - previewResponse.data.id:', previewResponse.data.id);
+    console.log('  - Final previewId found:', previewId);
 
     if (!previewId) {
       console.error('❌ No preview ID found in response');
-      return res.status(500).json({ error: 'Invalid preview response: missing preview ID' });
+      console.error('❌ Full raw Preview response data:', JSON.stringify(previewResponse.data, null, 2));
+      console.error('❌ Response status:', previewResponse.status);
+      console.error('❌ Response headers:', previewResponse.headers);
+      
+      return res.status(500).json({ 
+        error: 'Invalid preview response: missing preview ID',
+        previewResponse: previewResponse.data,
+        status: previewResponse.status
+      });
     }
 
     console.log('📡 Step 3: Execute transfer...');
@@ -777,10 +861,10 @@ app.post('/api/mesh/transfer', async (req, res) => {
 
     // Step 4: Execute transfer
     const executeResponse = await meshAPI.post('/api/v1/transfers/managed/execute', {
-      fromAuthToken: realAccessToken,
-      fromType: brokerType,
-      previewId: previewId
-      // Note: mfaCode would be included here if required
+      FromAuthToken: realAccessToken,  // Correct PascalCase per docs
+      FromType: brokerType,           // Correct PascalCase per docs
+      PreviewId: previewId            // Correct PascalCase per docs
+      // Note: MfaCode would be included here if required
     });
 
     console.log('✅ Step 3 completed: Transfer executed successfully!');
@@ -795,7 +879,7 @@ app.post('/api/mesh/transfer', async (req, res) => {
     
     res.json({
       transfer: {
-        id: transferResult.TransferId || transferResult.transferId || transferResult.id,
+        id: transferResult.TransferId || transferResult.transferId || transferResult.id || 'unknown',
         fromAccount: fromConnectionId,
         toAccount: transferResult.ToAddress || transferResult.toAddress || (toAddress || APP_WALLET_ADDRESS),
         amount: transferResult.Amount || transferResult.amount || amount,
@@ -803,12 +887,12 @@ app.post('/api/mesh/transfer', async (req, res) => {
         network: transferResult.NetworkName || transferResult.networkName || 'Base',
         status: (transferResult.Status || transferResult.status || 'pending').toLowerCase(),
         timestamp: new Date().toISOString(),
-        hash: transferResult.Hash || transferResult.hash || transferResult.txHash,
+        hash: transferResult.Hash || transferResult.hash || transferResult.txHash || null,
         networkId: transferResult.NetworkId || transferResult.networkId || baseNetworkId,
         fees: {
-          network: transferResult.NetworkGasFee || transferResult.networkGasFee,
-          institution: transferResult.InstitutionTransferFee || transferResult.institutionTransferFee,
-          total: transferResult.TotalTrasferFeeFiat || transferResult.totalTransferFeeFiat
+          network: transferResult.NetworkGasFee || transferResult.networkGasFee || null,
+          institution: transferResult.InstitutionTransferFee || transferResult.institutionTransferFee || null,
+          total: transferResult.TotalTransferFeeFiat || transferResult.totalTransferFeeFiat || null
         }
       }
     });
@@ -816,17 +900,29 @@ app.post('/api/mesh/transfer', async (req, res) => {
   } catch (error) {
     console.error('❌ Error executing managed transfer:', error.response?.data || error.message);
     console.error('❌ Full error response:', JSON.stringify(error.response?.data, null, 2));
+    console.error('❌ Error stack:', error.stack);
     
     let errorMessage = 'Failed to execute transfer';
+    let statusCode = 500;
+    
     if (error.response?.data?.ErrorMessage) {
       errorMessage = error.response.data.ErrorMessage;
+      statusCode = error.response.status || 500;
     } else if (error.response?.data?.error) {
       errorMessage = error.response.data.error;
+      statusCode = error.response.status || 500;
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+      statusCode = error.response.status || 500;
     } else if (error.message) {
       errorMessage = error.message;
     }
     
-    res.status(500).json({ error: errorMessage });
+    res.status(statusCode).json({ 
+      error: errorMessage,
+      details: error.response?.data || null,
+      step: 'transfer_execution'
+    });
   }
 });
 
