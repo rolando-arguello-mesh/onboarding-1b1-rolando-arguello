@@ -34,6 +34,59 @@ export interface MeshConnection {
   accounts: MeshAccount[];
 }
 
+// Add cryptocurrency balance interfaces
+export interface CryptocurrencyPosition {
+  symbol: string;
+  name: string;
+  amount: number;
+  marketValue: number;
+  lastPrice: number;
+  costBasis: number;
+  pnl: number;
+  network: string;
+  accountId: string;
+  formattedAmount: string;
+  formattedValue: string;
+  formattedPrice: string;
+  formattedPnL: string;
+  rawPosition: any;
+}
+
+export interface CryptoBalanceData {
+  success: boolean;
+  connectionId: string;
+  brokerType: string;
+  brokerName?: string;
+  summary: {
+    totalCryptoValue: number;
+    totalPositions: number;
+    formattedTotalValue: string;
+  };
+  cryptocurrencyPositions: CryptocurrencyPosition[];
+  otherPositions: {
+    equityCount: number;
+    nftCount: number;
+    optionCount: number;
+  };
+  timestamp: string;
+}
+
+export interface USDCBalanceData {
+  success: boolean;
+  connectionId: string;
+  brokerType: string;
+  brokerName?: string;
+  usdc: {
+    totalBalance: number;
+    totalValue: number;
+    formattedBalance: string;
+    formattedValue: string;
+    positions: any[];
+    positionsCount: number;
+  };
+  timestamp: string;
+}
+
 // App State Types
 export interface AppState {
   connections: MeshConnection[];

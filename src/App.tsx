@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MeshService } from './services/meshService';
-import { MeshConnection, MeshPortfolio, MeshTransfer } from './types';
+import { MeshConnection, MeshPortfolio, MeshTransfer, CryptoBalanceData, USDCBalanceData } from './types';
 import './App.css';
 
 // App with separate buttons for Coinbase and Phantom Wallet
@@ -8,10 +8,55 @@ import './App.css';
 function App() {
   const [connection, setConnection] = useState<MeshConnection | null>(null);
   const [portfolio, setPortfolio] = useState<MeshPortfolio | null>(null);
+  const [cryptoBalances, setCryptoBalances] = useState<CryptoBalanceData | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<USDCBalanceData | null>(null);
   const [transfers, setTransfers] = useState<MeshTransfer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appWalletAddress, setAppWalletAddress] = useState<string>('');
+
+  // Load crypto balances for Coinbase
+  const loadCryptoBalances = async () => {
+    try {
+      console.log('🪙 Loading crypto balances...');
+      const balanceData = await MeshService.getCoinbaseCryptoBalances();
+      setCryptoBalances(balanceData);
+      console.log('✅ Crypto balances loaded successfully');
+    } catch (err: any) {
+      console.error('❌ Failed to load crypto balances:', err);
+      // Don't set error, just log it since this might be normal for non-Coinbase connections
+    }
+  };
+
+  // Load mock data for testing UI
+  const loadMockData = async () => {
+    try {
+      console.log('🧪 Loading mock crypto balances...');
+      const mockCryptoData = await MeshService.getMockCryptoBalances();
+      const mockUSDCData = await MeshService.getMockUSDCBalance();
+      
+      setCryptoBalances(mockCryptoData);
+      setUsdcBalance(mockUSDCData);
+      
+      console.log('✅ Mock data loaded successfully');
+    } catch (err: any) {
+      console.error('❌ Failed to load mock data:', err);
+      setError('Failed to load mock data');
+    }
+  };
+
+  // Load USDC balance specifically
+  const loadUSDCBalance = async (connectionId: string) => {
+    try {
+      console.log('💰 Loading USDC balance...');
+      const usdcData = await MeshService.getUSDCBalance(connectionId);
+      setUsdcBalance(usdcData);
+      console.log('✅ USDC balance loaded successfully');
+    } catch (err: any) {
+      console.error('❌ Failed to load USDC balance:', err);
+      // Don't set error, just log it
+    }
+  };
 
   // Load app wallet address on mount
   useEffect(() => {
@@ -47,10 +92,12 @@ function App() {
         
         setConnection(newConnection);
         
-        // Load portfolio after connection
+        // Load portfolio and crypto balances after connection
         setTimeout(() => {
           loadPortfolio(newConnection.id);
-        }, 1000);
+          loadCryptoBalances();
+          loadUSDCBalance(newConnection.id);
+        }, 2000);
         
         console.log('Coinbase connected successfully with ID:', result.connectionId);
       } else {
@@ -225,6 +272,18 @@ function App() {
           </div>
         </div>
 
+        {/* Demo UI Test Button */}
+        <div className="demo-controls">
+          <button 
+            className="demo-btn"
+            onClick={loadMockData}
+            disabled={loading}
+          >
+            🧪 Preview Crypto Balances UI
+          </button>
+          <p><small>Click to see how the crypto balances interface looks with your $12.21 USDC</small></p>
+        </div>
+
         <div className="connections-section">
           <h2>Connect Your Account</h2>
           <div className="connection-center">
@@ -257,6 +316,8 @@ function App() {
                     onClick={() => {
                       setConnection(null);
                       setPortfolio(null);
+                      setCryptoBalances(null);
+                      setUsdcBalance(null);
                       setTransfers([]);
                       setError(null);
                     }}
@@ -268,6 +329,75 @@ function App() {
             )}
           </div>
         </div>
+
+        {/* Crypto Balances Display */}
+        {cryptoBalances && (
+          <div className="crypto-balances-section">
+            <h2>💰 Cryptocurrency Balances</h2>
+            <div className="crypto-summary">
+              <div className="total-value">
+                <h3>Total Portfolio Value</h3>
+                <div className="value-display">
+                  {cryptoBalances.summary.formattedTotalValue}
+                </div>
+                <div className="positions-count">
+                  {cryptoBalances.summary.totalPositions} positions
+                </div>
+              </div>
+            </div>
+            
+            <div className="crypto-positions">
+              <h3>Your Positions</h3>
+              <div className="positions-list">
+                {cryptoBalances.cryptocurrencyPositions.map((position, index) => (
+                  <div key={position.symbol} className="position-card">
+                    <div className="position-header">
+                      <h4>{position.symbol}</h4>
+                      <span className="position-name">{position.name}</span>
+                    </div>
+                    <div className="position-details">
+                      <div className="position-amount">
+                        <span className="label">Amount:</span>
+                        <span className="value">{position.formattedAmount}</span>
+                      </div>
+                      <div className="position-value">
+                        <span className="label">Value:</span>
+                        <span className="value">{position.formattedValue}</span>
+                      </div>
+                      <div className="position-price">
+                        <span className="label">Price:</span>
+                        <span className="value">{position.formattedPrice}</span>
+                      </div>
+                      <div className={`position-pnl ${position.pnl >= 0 ? 'positive' : 'negative'}`}>
+                        <span className="label">P&L:</span>
+                        <span className="value">{position.formattedPnL}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="balance-timestamp">
+              <small>Last updated: {new Date(cryptoBalances.timestamp).toLocaleString()}</small>
+            </div>
+          </div>
+        )}
+
+        {/* USDC Balance Highlight */}
+        {usdcBalance && (
+          <div className="usdc-balance-section">
+            <h3>💰 USDC Balance</h3>
+            <div className="usdc-summary">
+              <div className="usdc-amount">
+                {usdcBalance.usdc.formattedBalance}
+              </div>
+              <div className="usdc-value">
+                {usdcBalance.usdc.formattedValue}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Portfolio Display */}
         {portfolio && (

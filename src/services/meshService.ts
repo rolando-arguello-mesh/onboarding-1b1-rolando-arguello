@@ -193,6 +193,61 @@ export class MeshService {
     }
   }
 
+  // Get cryptocurrency balances from Coinbase
+  static async getCoinbaseCryptoBalances(): Promise<any> {
+    try {
+      const response = await api.get('/coinbase-crypto-balances');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting Coinbase crypto balances:', error);
+      throw new Error('Failed to get Coinbase crypto balances');
+    }
+  }
+
+  // Get complete balance information from Coinbase (multiple endpoints)
+  static async getCoinbaseCompleteBalance(): Promise<any> {
+    try {
+      const response = await api.get('/coinbase-complete-balance');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting Coinbase complete balance:', error);
+      throw new Error('Failed to get Coinbase complete balance');
+    }
+  }
+
+  // Get mock cryptocurrency balances for testing UI
+  static async getMockCryptoBalances(): Promise<any> {
+    try {
+      const response = await api.get('/debug/mock-crypto-balances');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting mock crypto balances:', error);
+      throw new Error('Failed to get mock crypto balances');
+    }
+  }
+
+  // Get mock USDC balance for testing UI
+  static async getMockUSDCBalance(): Promise<any> {
+    try {
+      const response = await api.get('/debug/mock-usdc-balance');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting mock USDC balance:', error);
+      throw new Error('Failed to get mock USDC balance');
+    }
+  }
+
+  // Get USDC balance specifically
+  static async getUSDCBalance(connectionId: string): Promise<any> {
+    try {
+      const response = await api.post('/usdc-balance', { connectionId });
+      return response.data;
+    } catch (error) {
+      console.error('Error getting USDC balance:', error);
+      throw new Error('Failed to get USDC balance');
+    }
+  }
+
   // Get portfolio information
   static async getPortfolio(connectionId: string): Promise<MeshPortfolio> {
     try {
