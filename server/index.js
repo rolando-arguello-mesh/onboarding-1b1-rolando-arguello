@@ -618,36 +618,215 @@ app.post('/api/mesh/portfolio', async (req, res) => {
   }
 });
 
-// Execute transfer
+// Get networks (cached for performance)
+let cachedNetworks = null;
+let networksLastFetched = null;
+const NETWORKS_CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+async function getNetworks() {
+  const now = Date.now();
+  
+  if (!cachedNetworks || !networksLastFetched || (now - networksLastFetched) > NETWORKS_CACHE_DURATION) {
+    try {
+      console.log('🌐 Fetching networks from Mesh API...');
+      const response = await meshAPI.get('/api/v1/transfers/managed/networks');
+      cachedNetworks = response.data.content.networks;
+      networksLastFetched = now;
+      console.log('✅ Networks cached successfully:', cachedNetworks.length);
+    } catch (error) {
+      console.error('❌ Failed to fetch networks:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+  
+  return cachedNetworks;
+}
+
+// Find Base network ID
+async function getBaseNetworkId() {
+  const networks = await getNetworks();
+  // Look for Base network (chainId 8453)
+  const baseNetwork = networks.find(n => 
+    n.name.toLowerCase().includes('base') || 
+    n.chainId === '8453' ||
+    n.chainId === 8453
+  );
+  
+  if (!baseNetwork) {
+    console.log('⚠️ Base network not found, available networks:', networks.map(n => ({ name: n.name, chainId: n.chainId })));
+    // Fallback to Ethereum if Base not found
+    const ethNetwork = networks.find(n => n.chainId === '1' || n.chainId === 1);
+    return ethNetwork?.id;
+  }
+  
+  return baseNetwork.id;
+}
+
+// Execute transfer (3-step flow: configure -> preview -> execute)
 app.post('/api/mesh/transfer', async (req, res) => {
   try {
     const { fromConnectionId, toAddress, amount, currency = 'USDC', network = 'base' } = req.body;
     
-    const transferData = {
-      fromAccountId: fromConnectionId,
-      toAddress: toAddress || APP_WALLET_ADDRESS,
-      amount: amount,
-      symbol: currency,
-      network: network,
+    console.log('🚀 Starting managed transfer process...');
+    console.log('  - From Connection:', fromConnectionId);
+    console.log('  - To Address:', toAddress || APP_WALLET_ADDRESS);
+    console.log('  - Amount:', amount, currency);
+    console.log('  - Network:', network);
+    
+    // Get connection data
+    const connectionData = connectedAccounts.get(fromConnectionId);
+    if (!connectionData) {
+      return res.status(404).json({ error: 'Connection not found. Please reconnect your account.' });
+    }
+
+    // Extract access token
+    const realAccessToken = connectionData.accessToken?.accountTokens?.[0]?.accessToken;
+    const brokerType = connectionData.accessToken?.brokerType;
+    
+    if (!realAccessToken) {
+      return res.status(400).json({ error: 'Invalid access token for connection' });
+    }
+
+    // Step 1: Get Base network ID
+    const baseNetworkId = await getBaseNetworkId();
+    if (!baseNetworkId) {
+      return res.status(400).json({ error: 'Base network not supported' });
+    }
+
+    console.log('📡 Step 1: Configure transfer...');
+    console.log('  - Base Network ID:', baseNetworkId);
+    console.log('  - Broker Type:', brokerType);
+    console.log('  - Access Token (first 20 chars):', realAccessToken.substring(0, 20) + '...');
+    
+    // Step 2: Configure transfer
+    const configurePayload = {
+      fromAuthToken: realAccessToken,  // Changed case to match docs
+      fromType: brokerType,           // Changed case to match docs
+      toAddresses: [{                 // Changed case to match docs
+        networkId: baseNetworkId,     // Changed case to match docs
+        symbol: currency,             // Changed case to match docs
+        address: toAddress || APP_WALLET_ADDRESS
+      }]
     };
     
-    const response = await meshAPI.post('/api/v1/transfers/managed', transferData);
+    console.log('📡 Configure payload:', JSON.stringify(configurePayload, null, 2));
+    
+    const configureResponse = await meshAPI.post('/api/v1/transfers/managed/configure', configurePayload);
+
+    console.log('✅ Step 1 completed: Transfer configured');
+    console.log('🔍 Configure response structure:', JSON.stringify(configureResponse.data, null, 2));
+    
+    const holdings = configureResponse.data.content.holdings;
+    
+    // Find the matching asset
+    const asset = holdings.find(h => h.symbol === currency);
+    if (!asset) {
+      return res.status(400).json({ error: `Asset ${currency} not available for transfer` });
+    }
+
+    const network_info = asset.networks.find(n => n.id === baseNetworkId);
+    if (!network_info || !network_info.eligibleForTransfer) {
+      return res.status(400).json({ error: `${currency} transfers not eligible on Base network` });
+    }
+
+    // Validate amount limits
+    if (amount < network_info.minimumAmount || amount > network_info.maximumAmount) {
+      return res.status(400).json({ 
+        error: `Amount ${amount} ${currency} is outside allowed range (${network_info.minimumAmount} - ${network_info.maximumAmount})` 
+      });
+    }
+
+    console.log('📡 Step 2: Preview transfer...');
+
+    // Step 3: Preview transfer
+    const previewPayload = {
+      fromAuthToken: realAccessToken,    // Changed case to match docs
+      fromType: brokerType,             // Changed case to match docs
+      networkId: baseNetworkId,         // Changed case to match docs
+      symbol: currency,                 // Changed case to match docs
+      toAddress: toAddress || APP_WALLET_ADDRESS, // Changed case to match docs
+      amount: amount                    // Changed case to match docs
+    };
+    
+    console.log('📡 Preview payload:', JSON.stringify(previewPayload, null, 2));
+    
+    const previewResponse = await meshAPI.post('/api/v1/transfers/managed/preview', previewPayload);
+
+    console.log('✅ Step 2 completed: Transfer previewed');
+    console.log('🔍 Preview response structure:', JSON.stringify(previewResponse.data, null, 2));
+
+    // Handle different possible response structures
+    let previewResult = previewResponse.data.PreviewResult || 
+                       previewResponse.data.content || 
+                       previewResponse.data;
+    
+    console.log('🔍 Preview result structure:', JSON.stringify(previewResult, null, 2));
+    
+    const previewId = previewResult.PreviewId || 
+                     previewResult.previewId || 
+                     previewResult.id;
+
+    if (!previewId) {
+      console.error('❌ No preview ID found in response');
+      return res.status(500).json({ error: 'Invalid preview response: missing preview ID' });
+    }
+
+    console.log('📡 Step 3: Execute transfer...');
+    console.log('  - Preview ID:', previewId);
+    console.log('  - Expires in:', previewResult.ExpiresIn || previewResult.expiresIn || 'unknown', 'seconds');
+
+    // Step 4: Execute transfer
+    const executeResponse = await meshAPI.post('/api/v1/transfers/managed/execute', {
+      fromAuthToken: realAccessToken,
+      fromType: brokerType,
+      previewId: previewId
+      // Note: mfaCode would be included here if required
+    });
+
+    console.log('✅ Step 3 completed: Transfer executed successfully!');
+    console.log('🔍 Execute response structure:', JSON.stringify(executeResponse.data, null, 2));
+
+    // Handle different possible response structures
+    const transferResult = executeResponse.data.TransferResult || 
+                          executeResponse.data.content || 
+                          executeResponse.data;
+    
+    console.log('🔍 Transfer result structure:', JSON.stringify(transferResult, null, 2));
     
     res.json({
       transfer: {
-        id: response.data.content.transferId,
+        id: transferResult.TransferId || transferResult.transferId || transferResult.id,
         fromAccount: fromConnectionId,
-        toAccount: toAddress || APP_WALLET_ADDRESS,
-        amount: amount,
-        currency: currency,
-        network: network,
-        status: response.data.content.status,
+        toAccount: transferResult.ToAddress || transferResult.toAddress || (toAddress || APP_WALLET_ADDRESS),
+        amount: transferResult.Amount || transferResult.amount || amount,
+        currency: transferResult.Symbol || transferResult.symbol || currency,
+        network: transferResult.NetworkName || transferResult.networkName || 'Base',
+        status: (transferResult.Status || transferResult.status || 'pending').toLowerCase(),
         timestamp: new Date().toISOString(),
+        hash: transferResult.Hash || transferResult.hash || transferResult.txHash,
+        networkId: transferResult.NetworkId || transferResult.networkId || baseNetworkId,
+        fees: {
+          network: transferResult.NetworkGasFee || transferResult.networkGasFee,
+          institution: transferResult.InstitutionTransferFee || transferResult.institutionTransferFee,
+          total: transferResult.TotalTrasferFeeFiat || transferResult.totalTransferFeeFiat
+        }
       }
     });
+
   } catch (error) {
-    console.error('Error executing transfer:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to execute transfer' });
+    console.error('❌ Error executing managed transfer:', error.response?.data || error.message);
+    console.error('❌ Full error response:', JSON.stringify(error.response?.data, null, 2));
+    
+    let errorMessage = 'Failed to execute transfer';
+    if (error.response?.data?.ErrorMessage) {
+      errorMessage = error.response.data.ErrorMessage;
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    res.status(500).json({ error: errorMessage });
   }
 });
 

@@ -15,6 +15,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [appWalletAddress, setAppWalletAddress] = useState<string>('');
   const [savedConnections, setSavedConnections] = useState<{ [key: string]: any }>({});
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferSuccess, setTransferSuccess] = useState<MeshTransfer | null>(null);
 
   // Check for existing saved connections on app load
   useEffect(() => {
@@ -272,6 +274,49 @@ function App() {
     }
   };
 
+  // Handle transfer of $5 USDC to app wallet
+  const handleTransfer = async () => {
+    if (!connection || !appWalletAddress) {
+      setError('Connection or app wallet address not available');
+      return;
+    }
+
+    setTransferLoading(true);
+    setError(null);
+    setTransferSuccess(null);
+
+    try {
+      console.log('🚀 Executing transfer: $5 USDC to app wallet');
+      console.log('  - From:', connection.id);
+      console.log('  - To:', appWalletAddress);
+      console.log('  - Amount: 5 USDC');
+      console.log('  - Network: Base');
+
+      const transfer = await MeshService.executeTransfer(
+        connection.id,
+        appWalletAddress,
+        5,
+        'USDC',
+        'base'
+      );
+
+      console.log('✅ Transfer executed successfully:', transfer);
+      setTransferSuccess(transfer);
+      
+      // Refresh balances after transfer
+      setTimeout(() => {
+        loadCryptoBalances(connection);
+        loadUSDCBalance(connection.id);
+      }, 2000);
+
+    } catch (err: any) {
+      console.error('❌ Transfer failed:', err);
+      setError(`Transfer failed: ${err.message}`);
+    } finally {
+      setTransferLoading(false);
+    }
+  };
+
   return (
     <div className="App">
       <div className="container">
@@ -284,8 +329,6 @@ function App() {
           <div className="error-message">
             <div>
               <strong>⚠️ {error}</strong>
-              <br />
-              <small>Using demo data for now. The portfolio below shows example values.</small>
             </div>
             <button onClick={() => setError(null)}>✕</button>
           </div>
@@ -412,6 +455,14 @@ function App() {
                       )}
                       <div className="connection-actions">
                         <button 
+                          className="transfer-btn"
+                          onClick={handleTransfer}
+                          disabled={transferLoading || !appWalletAddress}
+                        >
+                          {transferLoading ? '🔄 Transferring...' : '💸 Transfer $5 USDC to App'}
+                        </button>
+                        
+                        <button 
                           className="disconnect-btn"
                           onClick={() => {
                             setConnection(null);
@@ -420,6 +471,7 @@ function App() {
                             setUsdcBalance(null);
                             setTransfers([]);
                             setError(null);
+                            setTransferSuccess(null);
                           }}
                         >
                           🔄 Connect Different Account
@@ -438,6 +490,19 @@ function App() {
                           🗑️ Clear Saved Tokens
                         </button>
                       </div>
+                      
+                      {/* Transfer Success Message */}
+                      {transferSuccess && (
+                        <div className="transfer-success">
+                          <div className="success-icon">✅</div>
+                          <h3>Transfer Successful!</h3>
+                          <p>Transfer ID: {transferSuccess.id}</p>
+                          <p>Amount: {transferSuccess.amount} {transferSuccess.currency}</p>
+                          <p>Network: {transferSuccess.network}</p>
+                          <p>Status: {transferSuccess.status}</p>
+                          <p>Timestamp: {new Date(transferSuccess.timestamp).toLocaleString()}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
