@@ -10,7 +10,7 @@ body {
   font-family: "Tektur", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #000000;
   min-height: 100vh;
 }
 
@@ -18,32 +18,33 @@ body {
   text-align: center;
   padding: 20px;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #000000;
   font-family: "Tektur", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 .header {
-  background: rgba(255, 255, 255, 0.1);
+  background: #1A1A1A;
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px;
   margin-bottom: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #00FF41;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
 }
 
 .header h1 {
-  color: white;
+  color: #00FF41;
   font-size: 2.5em;
   font-weight: 800;
   margin: 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
   letter-spacing: 1px;
 }
 
 .header p {
-  color: rgba(255, 255, 255, 0.9);
+  color: #00C853;
   font-size: 1.1em;
   font-weight: 400;
   margin: 10px 0 0 0;
@@ -51,21 +52,22 @@ body {
 }
 
 .error-message {
-  background: rgba(255, 107, 107, 0.2);
-  color: white;
+  background: rgba(123, 31, 162, 0.2);
+  color: #00FF41;
   padding: 15px;
   border-radius: 10px;
   margin: 20px 0;
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  border: 1px solid #7B1FA2;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-shadow: 0 0 15px rgba(123, 31, 162, 0.3);
 }
 
 .error-message button {
-  background: none;
+  background: #7B1FA2;
   border: none;
-  color: white;
+  color: #00FF41;
   cursor: pointer;
   font-size: 1.2em;
   padding: 5px 10px;
@@ -74,7 +76,8 @@ body {
 }
 
 .error-message button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #7CFC00;
+  color: #000000;
 }
 
 /* Dashboard Layout - Two Columns */
@@ -94,16 +97,17 @@ body {
 
 /* Left Column - App Wallet */
 .app-wallet {
-  background: rgba(255, 255, 255, 0.1);
+  background: #1A1A1A;
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #00B140;
   text-align: center;
+  box-shadow: 0 0 15px rgba(0, 177, 64, 0.2);
 }
 
 .app-wallet h3 {
-  color: white;
+  color: #00FF41;
   margin-bottom: 20px;
   font-size: 1.5em;
   font-weight: 700;
@@ -111,28 +115,30 @@ body {
 }
 
 .wallet-address {
-  background: rgba(0, 0, 0, 0.3);
-  color: #00ff88;
+  background: #000000;
+  color: #00FF41;
   padding: 15px;
   border-radius: 10px;
   font-family: 'Courier New', monospace;
   font-size: 0.9em;
   word-break: break-all;
-  border: 1px solid rgba(0, 255, 136, 0.3);
+  border: 1px solid #00FF41;
   margin-bottom: 10px;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
 }
 
 .app-wallet-balance {
-  background: rgba(255, 255, 255, 0.1);
+  background: #1A1A1A;
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #00B140;
   text-align: center;
+  box-shadow: 0 0 15px rgba(0, 177, 64, 0.2);
 }
 
 .app-wallet-balance h3 {
-  color: white;
+  color: #00FF41;
   margin-bottom: 20px;
   font-size: 1.5em;
 }
@@ -145,7 +151,7 @@ body {
 }
 
 .balance-placeholder p {
-  color: rgba(255, 255, 255, 0.7);
+  color: #00C853;
   margin: 0;
   font-style: italic;
 }
@@ -153,22 +159,23 @@ body {
 .balance-value {
   font-size: 2em;
   font-weight: 900;
-  color: white;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  color: #00FF41;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
   letter-spacing: 1px;
 }
 
 /* Right Column - Connected Accounts */
 .connections-section {
-  background: rgba(255, 255, 255, 0.1);
+  background: #1A1A1A;
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #00B140;
+  box-shadow: 0 0 15px rgba(0, 177, 64, 0.2);
 }
 
 .connections-section h2 {
-  color: white;
+  color: #00FF41;
   margin-bottom: 20px;
   font-size: 1.8em;
   font-weight: 800;
@@ -209,21 +216,29 @@ body {
 }
 
 .coinbase-btn {
-  background: linear-gradient(45deg, #0052ff, #0045cc);
-  color: white;
+  background: linear-gradient(45deg, #00C853, #00B140);
+  color: #000000;
+  border: 1px solid #00FF41;
+  box-shadow: 0 0 10px rgba(0, 200, 83, 0.3);
 }
 
 .coinbase-btn:hover {
-  background: linear-gradient(45deg, #0045cc, #003399);
+  background: linear-gradient(45deg, #7CFC00, #00FF41);
+  color: #000000;
+  box-shadow: 0 0 15px rgba(124, 252, 0, 0.5);
 }
 
 .phantom-btn {
-  background: linear-gradient(45deg, #ab9ff2, #8b7fd8);
-  color: white;
+  background: linear-gradient(45deg, #00B140, #00C853);
+  color: #000000;
+  border: 1px solid #00FF41;
+  box-shadow: 0 0 10px rgba(0, 177, 64, 0.3);
 }
 
 .phantom-btn:hover {
-  background: linear-gradient(45deg, #8b7fd8, #7a6ec4);
+  background: linear-gradient(45deg, #7CFC00, #00FF41);
+  color: #000000;
+  box-shadow: 0 0 15px rgba(124, 252, 0, 0.5);
 }
 
 .connect-btn:disabled {
@@ -237,32 +252,34 @@ body {
 }
 
 .connection-success {
-  background: rgba(76, 175, 80, 0.2);
-  border: 1px solid rgba(76, 175, 80, 0.3);
+  background: rgba(0, 200, 83, 0.2);
+  border: 1px solid #00C853;
   border-radius: 15px;
   padding: 20px;
   margin-bottom: 20px;
+  box-shadow: 0 0 15px rgba(0, 200, 83, 0.2);
 }
 
 .success-icon {
   font-size: 2em;
   margin-bottom: 10px;
+  color: #00FF41;
 }
 
 .connection-success h3 {
-  color: white;
+  color: #00FF41;
   margin: 10px 0;
 }
 
 .connection-success p {
-  color: rgba(255, 255, 255, 0.8);
+  color: #00C853;
   margin: 5px 0;
   font-size: 0.9em;
 }
 
 .disconnect-btn {
-  background: linear-gradient(45deg, #ff6b6b, #ff5252);
-  color: white;
+  background: linear-gradient(45deg, #7B1FA2, #6A1B9A);
+  color: #00FF41;
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
@@ -270,10 +287,12 @@ body {
   font-size: 0.9em;
   transition: all 0.3s ease;
   margin-top: 10px;
+  box-shadow: 0 0 10px rgba(123, 31, 162, 0.3);
 }
 
 .disconnect-btn:hover {
-  background: linear-gradient(45deg, #ff5252, #ff3333);
+  background: linear-gradient(45deg, #7CFC00, #00FF41);
+  color: #000000;
   transform: translateY(-1px);
 }
 
@@ -286,43 +305,47 @@ body {
 }
 
 .clear-tokens-btn {
-  background: linear-gradient(45deg, #ff9800, #f57c00);
-  color: white;
+  background: linear-gradient(45deg, #7B1FA2, #6A1B9A);
+  color: #00FF41;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.8em;
   transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(123, 31, 162, 0.3);
 }
 
 .clear-tokens-btn:hover {
-  background: linear-gradient(45deg, #f57c00, #e65100);
+  background: linear-gradient(45deg, #7CFC00, #00FF41);
+  color: #000000;
   transform: translateY(-1px);
 }
 
 /* Saved Token Indicator */
 .saved-token-indicator {
-  background: rgba(76, 175, 80, 0.1);
-  border: 1px solid rgba(76, 175, 80, 0.3);
+  background: rgba(0, 200, 83, 0.1);
+  border: 1px solid #00C853;
   border-radius: 8px;
   padding: 12px;
   margin: 15px 0;
   text-align: center;
+  box-shadow: 0 0 10px rgba(0, 200, 83, 0.2);
 }
 
 .indicator-icon {
   font-size: 1.2em;
   margin-right: 8px;
+  color: #00FF41;
 }
 
 .saved-token-indicator span {
-  color: rgba(255, 255, 255, 0.9);
+  color: #00FF41;
   font-size: 0.9em;
 }
 
 .saved-token-indicator small {
-  color: rgba(255, 255, 255, 0.7);
+  color: #00C853;
   font-size: 0.8em;
 }
 
@@ -332,7 +355,7 @@ body {
 }
 
 .saved-connections-section h3 {
-  color: white;
+  color: #00FF41;
   margin-bottom: 15px;
   font-size: 1.2em;
   text-align: center;
@@ -346,19 +369,21 @@ body {
 }
 
 .saved-connection-item {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(26, 26, 26, 0.8);
+  border: 1px solid #00B140;
   border-radius: 12px;
   padding: 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 177, 64, 0.2);
 }
 
 .saved-connection-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(26, 26, 26, 1);
   transform: translateY(-1px);
+  box-shadow: 0 0 15px rgba(0, 177, 64, 0.4);
 }
 
 .saved-connection-info {
@@ -369,15 +394,16 @@ body {
 
 .provider-icon {
   font-size: 1.8em;
+  color: #00FF41;
 }
 
 .saved-connection-info strong {
-  color: white;
+  color: #00FF41;
   font-size: 1em;
 }
 
 .saved-connection-info small {
-  color: rgba(255, 255, 255, 0.7);
+  color: #00C853;
   font-size: 0.8em;
 }
 
@@ -387,8 +413,8 @@ body {
 }
 
 .use-saved-btn {
-  background: linear-gradient(45deg, #4caf50, #45a049);
-  color: white;
+  background: linear-gradient(45deg, #00C853, #00B140);
+  color: #000000;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -396,32 +422,36 @@ body {
   font-size: 0.85em;
   font-weight: 600;
   transition: all 0.3s ease;
+  box-shadow: 0 0 8px rgba(0, 200, 83, 0.3);
 }
 
 .use-saved-btn:hover {
-  background: linear-gradient(45deg, #45a049, #3e8e41);
+  background: linear-gradient(45deg, #7CFC00, #00FF41);
+  color: #000000;
   transform: translateY(-1px);
 }
 
 .remove-saved-btn {
-  background: linear-gradient(45deg, #f44336, #d32f2f);
-  color: white;
+  background: linear-gradient(45deg, #7B1FA2, #6A1B9A);
+  color: #00FF41;
   border: none;
   padding: 8px 12px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.8em;
   transition: all 0.3s ease;
+  box-shadow: 0 0 8px rgba(123, 31, 162, 0.3);
 }
 
 .remove-saved-btn:hover {
-  background: linear-gradient(45deg, #d32f2f, #b71c1c);
+  background: linear-gradient(45deg, #7CFC00, #00FF41);
+  color: #000000;
   transform: translateY(-1px);
 }
 
 .divider {
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: #00C853;
   font-size: 0.9em;
   font-style: italic;
   margin: 20px 0;
@@ -435,29 +465,31 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(to right, transparent, rgba(0, 200, 83, 0.3), transparent);
   z-index: 1;
 }
 
 .divider span {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #000000;
   padding: 0 15px;
   position: relative;
   z-index: 2;
+  color: #00FF41;
 }
 
 /* USDC Balance Section */
 .usdc-balance-section {
-  background: rgba(255, 255, 255, 0.1);
+  background: #1A1A1A;
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 25px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #00B140;
   text-align: center;
+  box-shadow: 0 0 15px rgba(0, 177, 64, 0.2);
 }
 
 .usdc-balance-section h3 {
-  color: white;
+  color: #00FF41;
   margin-bottom: 15px;
   font-size: 1.4em;
 }
@@ -472,27 +504,28 @@ body {
 .usdc-amount {
   font-size: 1.8em;
   font-weight: 800;
-  color: #00ff88;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  color: #00FF41;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
   letter-spacing: 0.8px;
 }
 
 .usdc-value {
   font-size: 1.2em;
-  color: rgba(255, 255, 255, 0.8);
+  color: #00C853;
 }
 
 /* Crypto Balances Section */
 .crypto-balances-section {
-  background: rgba(255, 255, 255, 0.1);
+  background: #1A1A1A;
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #00B140;
+  box-shadow: 0 0 15px rgba(0, 177, 64, 0.2);
 }
 
 .crypto-balances-section h2 {
-  color: white;
+  color: #00FF41;
   margin-bottom: 25px;
   font-size: 1.8em;
 }
@@ -503,7 +536,7 @@ body {
 }
 
 .total-value h3 {
-  color: white;
+  color: #00FF41;
   margin-bottom: 15px;
   font-size: 1.4em;
 }
@@ -511,19 +544,19 @@ body {
 .value-display {
   font-size: 2.5em;
   font-weight: 900;
-  color: #00ff88;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  color: #00FF41;
+  text-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
   margin-bottom: 10px;
   letter-spacing: 1px;
 }
 
 .positions-count {
-  color: rgba(255, 255, 255, 0.7);
+  color: #00C853;
   font-size: 1.1em;
 }
 
 .crypto-positions h3 {
-  color: white;
+  color: #00FF41;
   margin-bottom: 20px;
   font-size: 1.3em;
   text-align: left;
@@ -536,16 +569,18 @@ body {
 }
 
 .position-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(26, 26, 26, 0.8);
+  border: 1px solid #00B140;
   border-radius: 15px;
   padding: 20px;
   transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 177, 64, 0.2);
 }
 
 .position-card:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(26, 26, 26, 1);
   transform: translateY(-2px);
+  box-shadow: 0 0 15px rgba(0, 177, 64, 0.4);
 }
 
 .position-header {
@@ -556,7 +591,7 @@ body {
 }
 
 .position-header h4 {
-  color: white;
+  color: #00FF41;
   margin: 0;
   font-size: 1.2em;
   font-weight: 700;
@@ -564,7 +599,7 @@ body {
 }
 
 .position-name {
-  color: rgba(255, 255, 255, 0.6);
+  color: #00C853;
   font-size: 0.9em;
 }
 
@@ -581,28 +616,28 @@ body {
 }
 
 .position-details .label {
-  color: rgba(255, 255, 255, 0.7);
+  color: #00B140;
   font-size: 0.9em;
 }
 
 .position-details .value {
-  color: white;
+  color: #00FF41;
   font-weight: 600;
   letter-spacing: 0.3px;
 }
 
 .position-pnl.positive .value {
-  color: #4caf50;
+  color: #00C853;
 }
 
 .position-pnl.negative .value {
-  color: #f44336;
+  color: #7B1FA2;
 }
 
 .balance-timestamp {
   text-align: center;
   margin-top: 20px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #00B140;
 }
 
 
