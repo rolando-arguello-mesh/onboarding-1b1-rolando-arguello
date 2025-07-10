@@ -44,10 +44,18 @@ function App() {
         };
         setConnection(restoredConnection);
         
-        // Load data for restored connection
-        setTimeout(() => {
-          loadCryptoBalances(restoredConnection);
-          loadUSDCBalance(restoredConnection.id);
+        // First restore the connection in the server, then load data
+        setTimeout(async () => {
+          try {
+            await MeshService.restoreConnection(coinbaseCheck.connectionId!, coinbaseCheck.connection);
+            loadCryptoBalances(restoredConnection);
+            loadUSDCBalance(restoredConnection.id);
+          } catch (error) {
+            console.error('❌ Failed to restore Coinbase connection:', error);
+            // Clear invalid connection
+            MeshService.clearSavedConnection(coinbaseCheck.connectionId!);
+            setConnection(null);
+          }
         }, 1000);
       } else if (phantomCheck.hasTokens && !connection) {
         console.log('🔄 Auto-restoring Phantom connection...');
@@ -60,10 +68,18 @@ function App() {
         };
         setConnection(restoredConnection);
         
-        // Load data for restored connection
-        setTimeout(() => {
-          loadCryptoBalances(restoredConnection);
-          loadUSDCBalance(restoredConnection.id);
+        // First restore the connection in the server, then load data
+        setTimeout(async () => {
+          try {
+            await MeshService.restoreConnection(phantomCheck.connectionId!, phantomCheck.connection);
+            loadCryptoBalances(restoredConnection);
+            loadUSDCBalance(restoredConnection.id);
+          } catch (error) {
+            console.error('❌ Failed to restore Phantom connection:', error);
+            // Clear invalid connection
+            MeshService.clearSavedConnection(phantomCheck.connectionId!);
+            setConnection(null);
+          }
         }, 1000);
       }
     };

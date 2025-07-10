@@ -137,6 +137,18 @@ export class MeshService {
     }
   }
 
+  // Restore connection from saved data
+  static async restoreConnection(connectionId: string, connectionData: any): Promise<void> {
+    try {
+      console.log('🔄 Restoring connection in server:', connectionId);
+      await this.storeConnection(connectionId, connectionData.accessToken, connectionData);
+      console.log('✅ Connection restored successfully');
+    } catch (error) {
+      console.error('❌ Error restoring connection:', error);
+      throw error;
+    }
+  }
+
   // Open MeshConnect for Coinbase
   static async openCoinbaseConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
     try {
