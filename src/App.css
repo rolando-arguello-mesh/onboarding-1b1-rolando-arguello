@@ -270,6 +270,175 @@ body {
   transform: translateY(-1px);
 }
 
+/* Connection Actions */
+.connection-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.clear-tokens-btn {
+  background: linear-gradient(45deg, #ff9800, #f57c00);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: all 0.3s ease;
+}
+
+.clear-tokens-btn:hover {
+  background: linear-gradient(45deg, #f57c00, #e65100);
+  transform: translateY(-1px);
+}
+
+/* Saved Token Indicator */
+.saved-token-indicator {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 15px 0;
+  text-align: center;
+}
+
+.indicator-icon {
+  font-size: 1.2em;
+  margin-right: 8px;
+}
+
+.saved-token-indicator span {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.9em;
+}
+
+.saved-token-indicator small {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8em;
+}
+
+/* Saved Connections Section */
+.saved-connections-section {
+  margin-bottom: 25px;
+}
+
+.saved-connections-section h3 {
+  color: white;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+  text-align: center;
+}
+
+.saved-connections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.saved-connection-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.saved-connection-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.saved-connection-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.provider-icon {
+  font-size: 1.8em;
+}
+
+.saved-connection-info strong {
+  color: white;
+  font-size: 1em;
+}
+
+.saved-connection-info small {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8em;
+}
+
+.saved-connection-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.use-saved-btn {
+  background: linear-gradient(45deg, #4caf50, #45a049);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.use-saved-btn:hover {
+  background: linear-gradient(45deg, #45a049, #3e8e41);
+  transform: translateY(-1px);
+}
+
+.remove-saved-btn {
+  background: linear-gradient(45deg, #f44336, #d32f2f);
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: all 0.3s ease;
+}
+
+.remove-saved-btn:hover {
+  background: linear-gradient(45deg, #d32f2f, #b71c1c);
+  transform: translateY(-1px);
+}
+
+.divider {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9em;
+  font-style: italic;
+  margin: 20px 0;
+  position: relative;
+}
+
+.divider:before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+  z-index: 1;
+}
+
+.divider span {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0 15px;
+  position: relative;
+  z-index: 2;
+}
+
 /* USDC Balance Section */
 .usdc-balance-section {
   background: rgba(255, 255, 255, 0.1);
@@ -444,6 +613,21 @@ body {
   
   .connect-btn {
     min-width: 100%;
+  }
+  
+  .saved-connection-item {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .saved-connection-actions {
+    justify-content: center;
+  }
+  
+  .connection-actions {
+    flex-direction: row;
+    justify-content: center;
   }
 }
 

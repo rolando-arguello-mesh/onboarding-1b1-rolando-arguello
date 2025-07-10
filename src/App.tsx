@@ -14,6 +14,60 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appWalletAddress, setAppWalletAddress] = useState<string>('');
+  const [savedConnections, setSavedConnections] = useState<{ [key: string]: any }>({});
+
+  // Check for existing saved connections on app load
+  useEffect(() => {
+    const checkSavedConnections = () => {
+      const saved = MeshService.getSavedConnections();
+      setSavedConnections(saved);
+      
+      // If we have saved connections, check if any are still valid
+      const coinbaseCheck = MeshService.hasValidTokensForProvider('coinbase');
+      const phantomCheck = MeshService.hasValidTokensForProvider('phantom');
+      
+      console.log('🔍 Checking saved connections on app load:');
+      console.log('  - Coinbase tokens valid:', coinbaseCheck.hasTokens);
+      console.log('  - Phantom tokens valid:', phantomCheck.hasTokens);
+      
+      // Auto-restore the most recent valid connection if available
+      if (coinbaseCheck.hasTokens && !connection) {
+        console.log('🔄 Auto-restoring Coinbase connection...');
+        const restoredConnection: MeshConnection = {
+          id: coinbaseCheck.connectionId!,
+          provider: 'coinbase',
+          type: 'cex',
+          connected: true,
+          accounts: []
+        };
+        setConnection(restoredConnection);
+        
+        // Load data for restored connection
+        setTimeout(() => {
+          loadCryptoBalances(restoredConnection);
+          loadUSDCBalance(restoredConnection.id);
+        }, 1000);
+      } else if (phantomCheck.hasTokens && !connection) {
+        console.log('🔄 Auto-restoring Phantom connection...');
+        const restoredConnection: MeshConnection = {
+          id: phantomCheck.connectionId!,
+          provider: 'phantom',
+          type: 'self_custody',
+          connected: true,
+          accounts: []
+        };
+        setConnection(restoredConnection);
+        
+        // Load data for restored connection
+        setTimeout(() => {
+          loadCryptoBalances(restoredConnection);
+          loadUSDCBalance(restoredConnection.id);
+        }, 1000);
+      }
+    };
+    
+    checkSavedConnections();
+  }, []);
 
   // Load crypto balances for connected account (Coinbase or Phantom)
   const loadCryptoBalances = async (connectionToUse?: MeshConnection) => {
@@ -265,21 +319,79 @@ function App() {
               <h2>Connect Your Account</h2>
               <div className="connection-center">
                 {!connection ? (
-                  <div className="connect-buttons">
-                    <button 
-                      className="connect-btn coinbase-btn"
-                      onClick={handleConnectCoinbase}
-                      disabled={loading}
-                    >
-                      {loading ? 'Connecting...' : '🟡 Connect Coinbase'}
-                    </button>
-                    <button 
-                      className="connect-btn phantom-btn"
-                      onClick={handleConnectPhantom}
-                      disabled={loading}
-                    >
-                      {loading ? 'Connecting...' : '👻 Connect Phantom'}
-                    </button>
+                  <div>
+                    {/* Show saved connections if any exist */}
+                    {Object.keys(savedConnections).length > 0 && (
+                      <div className="saved-connections-section">
+                        <h3>Previously Connected Accounts</h3>
+                        <div className="saved-connections-list">
+                          {Object.entries(savedConnections).map(([connectionId, conn]) => (
+                            <div key={connectionId} className="saved-connection-item">
+                              <div className="saved-connection-info">
+                                <span className="provider-icon">
+                                  {conn.provider === 'coinbase' ? '🟡' : '👻'}
+                                </span>
+                                <div>
+                                  <strong>{conn.provider === 'coinbase' ? 'Coinbase' : 'Phantom Wallet'}</strong>
+                                  <br />
+                                  <small>Saved: {new Date(conn.savedAt).toLocaleDateString()}</small>
+                                </div>
+                              </div>
+                              <div className="saved-connection-actions">
+                                <button 
+                                  className="use-saved-btn"
+                                  onClick={() => {
+                                    const restoredConnection: MeshConnection = {
+                                      id: connectionId,
+                                      provider: conn.provider,
+                                      type: conn.provider === 'coinbase' ? 'cex' : 'self_custody',
+                                      connected: true,
+                                      accounts: []
+                                    };
+                                    setConnection(restoredConnection);
+                                    
+                                    // Load data for restored connection
+                                    setTimeout(() => {
+                                      loadCryptoBalances(restoredConnection);
+                                      loadUSDCBalance(restoredConnection.id);
+                                    }, 500);
+                                  }}
+                                >
+                                  Use Saved
+                                </button>
+                                <button 
+                                  className="remove-saved-btn"
+                                  onClick={() => {
+                                    MeshService.clearSavedConnection(connectionId);
+                                    setSavedConnections(MeshService.getSavedConnections());
+                                  }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="divider">or connect a new account</div>
+                      </div>
+                    )}
+                    
+                    <div className="connect-buttons">
+                      <button 
+                        className="connect-btn coinbase-btn"
+                        onClick={handleConnectCoinbase}
+                        disabled={loading}
+                      >
+                        {loading ? 'Connecting...' : '🟡 Connect Coinbase'}
+                      </button>
+                      <button 
+                        className="connect-btn phantom-btn"
+                        onClick={handleConnectPhantom}
+                        disabled={loading}
+                      >
+                        {loading ? 'Connecting...' : '👻 Connect Phantom'}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="connected-state">
@@ -288,19 +400,44 @@ function App() {
                       <h3>Connected to {connection.provider === 'coinbase' ? 'Coinbase' : 'Phantom Wallet'}</h3>
                       <p>Connection ID: {connection.id}</p>
                       <p>Type: {connection.type === 'cex' ? 'Centralized Exchange' : 'Self-Custody Wallet'}</p>
-                      <button 
-                        className="disconnect-btn"
-                        onClick={() => {
-                          setConnection(null);
-                          setPortfolio(null);
-                          setCryptoBalances(null);
-                          setUsdcBalance(null);
-                          setTransfers([]);
-                          setError(null);
-                        }}
-                      >
-                        🔄 Connect Different Account
-                      </button>
+                      
+                      {/* Show if using saved tokens */}
+                      {savedConnections[connection.id] && (
+                        <div className="saved-token-indicator">
+                          <span className="indicator-icon">🔐</span>
+                          <span>Using saved authentication tokens</span>
+                          <br />
+                          <small>Saved: {new Date(savedConnections[connection.id].savedAt).toLocaleString()}</small>
+                        </div>
+                      )}
+                      <div className="connection-actions">
+                        <button 
+                          className="disconnect-btn"
+                          onClick={() => {
+                            setConnection(null);
+                            setPortfolio(null);
+                            setCryptoBalances(null);
+                            setUsdcBalance(null);
+                            setTransfers([]);
+                            setError(null);
+                          }}
+                        >
+                          🔄 Connect Different Account
+                        </button>
+                        
+                        <button 
+                          className="clear-tokens-btn"
+                          onClick={() => {
+                            if (connection) {
+                              MeshService.clearSavedConnection(connection.id);
+                              setSavedConnections(MeshService.getSavedConnections());
+                              alert(`Saved tokens for ${connection.provider} have been cleared. You'll need to authenticate again next time.`);
+                            }
+                          }}
+                        >
+                          🗑️ Clear Saved Tokens
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

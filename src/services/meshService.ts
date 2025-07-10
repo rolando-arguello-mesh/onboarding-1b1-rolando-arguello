@@ -15,6 +15,86 @@ const MESH_CLIENT_ID = process.env.MESH_CLIENT_ID || 'cd2ee500-013f-47b2-38e6-08
 
 export class MeshService {
   
+  // Persistent token management
+  private static STORAGE_KEY = 'mesh_connections';
+  
+  // Save connection tokens to localStorage
+  static saveConnectionTokens(connectionId: string, accessToken: any, provider: string): void {
+    try {
+      const existingConnections = this.getSavedConnections();
+      existingConnections[connectionId] = {
+        accessToken,
+        provider,
+        savedAt: new Date().toISOString(),
+        connectionId
+      };
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(existingConnections));
+      console.log('✅ Connection tokens saved to localStorage:', connectionId);
+    } catch (error) {
+      console.error('❌ Failed to save connection tokens:', error);
+    }
+  }
+
+  // Get all saved connections from localStorage
+  static getSavedConnections(): { [key: string]: any } {
+    try {
+      const saved = localStorage.getItem(this.STORAGE_KEY);
+      return saved ? JSON.parse(saved) : {};
+    } catch (error) {
+      console.error('❌ Failed to get saved connections:', error);
+      return {};
+    }
+  }
+
+  // Get specific saved connection
+  static getSavedConnection(connectionId: string): any | null {
+    const connections = this.getSavedConnections();
+    return connections[connectionId] || null;
+  }
+
+  // Check if we have valid tokens for a provider
+  static hasValidTokensForProvider(provider: string): { hasTokens: boolean; connectionId?: string; connection?: any } {
+    const connections = this.getSavedConnections();
+    
+    for (const [connectionId, connection] of Object.entries(connections)) {
+      if ((connection as any).provider === provider) {
+        // Check if token is not too old (optional - you can add expiration logic here)
+        const savedAt = new Date((connection as any).savedAt);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+        
+        // Consider tokens valid for 24 hours (adjust as needed)
+        if (hoursDiff < 24) {
+          return { hasTokens: true, connectionId, connection };
+        }
+      }
+    }
+    
+    return { hasTokens: false };
+  }
+
+  // Clear saved connection
+  static clearSavedConnection(connectionId: string): void {
+    try {
+      const connections = this.getSavedConnections();
+      delete connections[connectionId];
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(connections));
+      console.log('✅ Connection cleared from localStorage:', connectionId);
+    } catch (error) {
+      console.error('❌ Failed to clear connection:', error);
+    }
+  }
+
+  // Clear all saved connections
+  static clearAllSavedConnections(): void {
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+      console.log('✅ All connections cleared from localStorage');
+    } catch (error) {
+      console.error('❌ Failed to clear all connections:', error);
+    }
+  }
+
   // Get MeshConnect link token for CEX (Coinbase)
   static async getLinkToken(): Promise<string> {
     try {
@@ -60,6 +140,28 @@ export class MeshService {
   // Open MeshConnect for Coinbase
   static async openCoinbaseConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
     try {
+      // First check if we have existing valid tokens for Coinbase
+      const existingTokenCheck = this.hasValidTokensForProvider('coinbase');
+      
+      if (existingTokenCheck.hasTokens) {
+        console.log('🔄 Found existing Coinbase tokens, reusing connection:', existingTokenCheck.connectionId);
+        
+        // Verify the tokens are still valid by making a test API call
+        try {
+          await this.storeConnection(existingTokenCheck.connectionId!, existingTokenCheck.connection!.accessToken, { provider: 'coinbase' });
+          
+          return { 
+            success: true, 
+            connectionId: existingTokenCheck.connectionId!,
+            fromCache: true 
+          } as any;
+        } catch (error) {
+          console.log('⚠️ Existing tokens invalid, clearing and creating new connection');
+          this.clearSavedConnection(existingTokenCheck.connectionId!);
+        }
+      }
+      
+      console.log('🔐 No valid tokens found, initiating new Coinbase authentication...');
       const linkToken = await this.getLinkToken();
       
       return new Promise((resolve) => {
@@ -75,6 +177,9 @@ export class MeshService {
               try {
                 // Store the connection data for future API calls
                 await this.storeConnection(connectionId, accessToken, payload);
+                
+                // Save tokens locally for future use
+                this.saveConnectionTokens(connectionId, accessToken, 'coinbase');
                 
                 resolve({ 
                   success: true, 
@@ -120,6 +225,28 @@ export class MeshService {
   // Open MeshConnect for Phantom Wallet
   static async openPhantomConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
     try {
+      // First check if we have existing valid tokens for Phantom
+      const existingTokenCheck = this.hasValidTokensForProvider('phantom');
+      
+      if (existingTokenCheck.hasTokens) {
+        console.log('🔄 Found existing Phantom tokens, reusing connection:', existingTokenCheck.connectionId);
+        
+        // Verify the tokens are still valid by making a test API call
+        try {
+          await this.storeConnection(existingTokenCheck.connectionId!, existingTokenCheck.connection!.accessToken, { provider: 'phantom' });
+          
+          return { 
+            success: true, 
+            connectionId: existingTokenCheck.connectionId!,
+            fromCache: true 
+          } as any;
+        } catch (error) {
+          console.log('⚠️ Existing tokens invalid, clearing and creating new connection');
+          this.clearSavedConnection(existingTokenCheck.connectionId!);
+        }
+      }
+      
+      console.log('🔐 No valid tokens found, initiating new Phantom authentication...');
       const linkToken = await this.getPhantomLinkToken();
       
       return new Promise((resolve) => {
@@ -135,6 +262,9 @@ export class MeshService {
               try {
                 // Store the connection data for future API calls
                 await this.storeConnection(connectionId, accessToken, payload);
+                
+                // Save tokens locally for future use
+                this.saveConnectionTokens(connectionId, accessToken, 'phantom');
                 
                 resolve({ 
                   success: true, 
