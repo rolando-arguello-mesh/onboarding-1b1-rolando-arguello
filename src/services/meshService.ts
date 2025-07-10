@@ -27,14 +27,19 @@ export class MeshService {
   }
 
   // Get MeshConnect link token for self-custody wallet (Phantom)
-  static async getWalletLinkToken(): Promise<string> {
+  static async getPhantomLinkToken(): Promise<string> {
     try {
       const response = await api.get('/link-token-wallet');
       return response.data.linkToken;
     } catch (error) {
-      console.error('Error getting wallet link token:', error);
-      throw new Error('Failed to get wallet link token');
+      console.error('Error getting Phantom link token:', error);
+      throw new Error('Failed to get Phantom link token');
     }
+  }
+
+  // Legacy method for backward compatibility
+  static async getWalletLinkToken(): Promise<string> {
+    return this.getPhantomLinkToken();
   }
 
   // Store connection data after successful authentication
@@ -113,19 +118,19 @@ export class MeshService {
   }
 
   // Open MeshConnect for Phantom Wallet
-  static async openWalletConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
+  static async openPhantomConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
     try {
-      const linkToken = await this.getWalletLinkToken();
+      const linkToken = await this.getPhantomLinkToken();
       
       return new Promise((resolve) => {
         const link = createLink({
           clientId: MESH_CLIENT_ID,
           onIntegrationConnected: async (payload) => {
-            console.log('Wallet connected successfully:', payload);
+            console.log('Phantom connected successfully:', payload);
             // Check if accessToken exists and extract connection info
             if (payload.accessToken) {
               const accessToken = payload.accessToken as any;
-              const connectionId = accessToken.accountId || accessToken.account_id || accessToken.id || 'wallet_' + Date.now();
+              const connectionId = accessToken.accountId || accessToken.account_id || accessToken.id || 'phantom_' + Date.now();
               
               try {
                 // Store the connection data for future API calls
@@ -167,9 +172,14 @@ export class MeshService {
         link.openLink(linkToken);
       });
     } catch (error) {
-      console.error('Error opening wallet connection:', error);
+      console.error('Error opening Phantom connection:', error);
       return { success: false, error: 'Failed to open connection' };
     }
+  }
+
+  // Legacy method for backward compatibility
+  static async openWalletConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
+    return this.openPhantomConnection();
   }
 
   // Get account information for connected providers

@@ -147,20 +147,20 @@ app.get('/api/mesh/link-token', async (req, res) => {
   }
 });
 
-// Get link token for self-custody wallets (shows catalog with Phantom and other wallets)
+// Get link token for Phantom wallet (goes directly to Phantom)
 app.get('/api/mesh/link-token-wallet', async (req, res) => {
   try {
     const response = await meshAPI.post('/api/v1/linktoken', {
-      userId: 'user_wallet_' + Date.now(),
-      // No integrationId - show full catalog of self-custody wallets including Phantom
+      userId: 'user_phantom_' + Date.now(),
+      integrationId: '757e703f-a8fe-4dc4-d0ec-08dc6737ad96', // Phantom integration ID from official API
       restrictMultipleAccounts: true
     });
     
-    console.log('✅ Wallet link token generated successfully');
+    console.log('✅ Phantom link token generated successfully');
     res.json({ linkToken: response.data.content.linkToken });
   } catch (error) {
-    console.error('❌ Error generating wallet link token:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to generate wallet link token' });
+    console.error('❌ Error generating Phantom link token:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to generate Phantom link token' });
   }
 });
 

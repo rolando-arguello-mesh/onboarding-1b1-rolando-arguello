@@ -73,7 +73,7 @@ function App() {
     
     try {
       console.log('Opening Phantom Wallet connection...');
-      const result = await MeshService.openWalletConnection();
+      const result = await MeshService.openPhantomConnection();
       
       if (result.success && result.connectionId) {
         // Real connection successful
