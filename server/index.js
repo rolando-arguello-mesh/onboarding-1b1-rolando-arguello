@@ -118,12 +118,24 @@ app.get('/api/debug/mesh-endpoints', async (req, res) => {
   }
 });
 
-// Get MeshConnect link token for Coinbase
+// Get all available integrations from Mesh
+app.get('/api/mesh/integrations', async (req, res) => {
+  try {
+    const response = await meshAPI.get('/api/v1/integrations');
+    console.log('✅ Retrieved all integrations from Mesh');
+    res.json(response.data);
+  } catch (error) {
+    console.error('❌ Error retrieving integrations:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to retrieve integrations' });
+  }
+});
+
+// Get MeshConnect link token for Coinbase (goes directly to Coinbase)
 app.get('/api/mesh/link-token', async (req, res) => {
   try {
     const response = await meshAPI.post('/api/v1/linktoken', {
       userId: 'user_coinbase_' + Date.now(),
-      integrationId: '9226e5c2-ebc3-4fdd-94f6-ed52cdce1420', // Coinbase integration ID
+      integrationId: '47624467-e52e-4938-a41a-7926b6c27acf', // Coinbase integration ID from official docs
       restrictMultipleAccounts: true
     });
     
@@ -135,12 +147,12 @@ app.get('/api/mesh/link-token', async (req, res) => {
   }
 });
 
-// Get link token for self-custody wallets
+// Get link token for self-custody wallets (shows catalog with Phantom and other wallets)
 app.get('/api/mesh/link-token-wallet', async (req, res) => {
   try {
     const response = await meshAPI.post('/api/v1/linktoken', {
       userId: 'user_wallet_' + Date.now(),
-      // No integrationId to show all available wallets including Phantom
+      // No integrationId - show full catalog of self-custody wallets including Phantom
       restrictMultipleAccounts: true
     });
     
