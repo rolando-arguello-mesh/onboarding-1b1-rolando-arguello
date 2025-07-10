@@ -28,22 +28,7 @@ function App() {
     }
   };
 
-  // Load mock data for testing UI
-  const loadMockData = async () => {
-    try {
-      console.log('🧪 Loading mock crypto balances...');
-      const mockCryptoData = await MeshService.getMockCryptoBalances();
-      const mockUSDCData = await MeshService.getMockUSDCBalance();
-      
-      setCryptoBalances(mockCryptoData);
-      setUsdcBalance(mockUSDCData);
-      
-      console.log('✅ Mock data loaded successfully');
-    } catch (err: any) {
-      console.error('❌ Failed to load mock data:', err);
-      setError('Failed to load mock data');
-    }
-  };
+
 
   // Load USDC balance specifically
   const loadUSDCBalance = async (connectionId: string) => {
@@ -272,17 +257,7 @@ function App() {
           </div>
         </div>
 
-        {/* Demo UI Test Button */}
-        <div className="demo-controls">
-          <button 
-            className="demo-btn"
-            onClick={loadMockData}
-            disabled={loading}
-          >
-            🧪 Preview Crypto Balances UI
-          </button>
-          <p><small>Click to see how the crypto balances interface looks with your $12.21 USDC</small></p>
-        </div>
+
 
         <div className="connections-section">
           <h2>Connect Your Account</h2>
@@ -399,32 +374,7 @@ function App() {
           </div>
         )}
 
-        {/* Portfolio Display */}
-        {portfolio && (
-          <div className="portfolio-section">
-            <h2>Your Portfolio</h2>
-            
-            {/* Demo Notice */}
-            <div className="demo-notice">
-              <p>📊 <strong>Demo Data:</strong> Showing example portfolio data. Connect real wallets to see actual balances.</p>
-            </div>
-            
-            <div className="portfolio-card">
-              <h3>💼 Wallet Portfolio</h3>
-              <div className="portfolio-value">
-                ${portfolio.totalValue.toFixed(2)}
-              </div>
-              <div className="assets-list">
-                {portfolio.accounts.map((account) => (
-                  <div key={account.id} className="asset-item">
-                    <span className="asset-name">{account.currency}</span>
-                    <span className="asset-balance">{account.balance.toFixed(4)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Transfer Section */}
         {connection && (

@@ -215,27 +215,7 @@ export class MeshService {
     }
   }
 
-  // Get mock cryptocurrency balances for testing UI
-  static async getMockCryptoBalances(): Promise<any> {
-    try {
-      const response = await api.get('/debug/mock-crypto-balances');
-      return response.data;
-    } catch (error) {
-      console.error('Error getting mock crypto balances:', error);
-      throw new Error('Failed to get mock crypto balances');
-    }
-  }
 
-  // Get mock USDC balance for testing UI
-  static async getMockUSDCBalance(): Promise<any> {
-    try {
-      const response = await api.get('/debug/mock-usdc-balance');
-      return response.data;
-    } catch (error) {
-      console.error('Error getting mock USDC balance:', error);
-      throw new Error('Failed to get mock USDC balance');
-    }
-  }
 
   // Get USDC balance specifically
   static async getUSDCBalance(connectionId: string): Promise<any> {
