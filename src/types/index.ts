@@ -22,8 +22,18 @@ export interface MeshTransfer {
   amount: number;
   currency: string;
   network: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'completed' | 'failed' | 'success' | 'confirmed';
   timestamp: string;
+  hash?: string | null;
+  networkId?: string;
+  fees?: {
+    network: number | null;
+    institution: number | null;
+    total: number | null;
+  };
+  actuallySuccessful?: boolean;
+  rawStatus?: string;
+  note?: string;
 }
 
 export interface MeshConnection {

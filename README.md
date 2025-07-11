@@ -192,6 +192,44 @@ The app is configured to work with both development and production environments.
 - Input validation and error handling
 - Secure API communication with Mesh
 
+## 🚨 MFA Troubleshooting - Coinbase Transfers
+
+### Problema: "Two factor code validation failed"
+
+**Causa más común:** Estás usando códigos MFA de 7 dígitos cuando Coinbase requiere códigos de 6 dígitos.
+
+#### ✅ **Solución Paso a Paso:**
+
+1. **🔍 Verifica el código MFA:**
+   - ❌ **Incorrecto:** `3032668` (7 dígitos)
+   - ✅ **Correcto:** `303266` (6 dígitos)
+
+2. **📱 Fuente del código:**
+   - ✅ **Usar:** App oficial de Coinbase
+   - ❌ **Evitar:** SMS o códigos de texto
+
+3. **⚡ Timing crítico:**
+   - Ingresa el código en **menos de 10 segundos**
+   - Los códigos expiran en **30 segundos**
+   - Usa códigos **completamente nuevos**
+
+4. **🕒 Sincronización de tiempo:**
+   - Activa sincronización automática de tiempo
+   - Verifica que tu reloj esté exacto
+
+5. **🔄 Si falla:**
+   - Cierra el modal de Mesh Pay
+   - Obtén un código completamente nuevo
+   - Inténtalo inmediatamente
+
+#### 📊 **Endpoints Utilizados:**
+- **SDK Frontend:** `/api/v1/catalog/transfers/execute` (normal)
+- **API Backend:** `/api/v1/transfers/managed/execute` (normal)
+
+#### 🛠️ **Debugging:**
+- Los logs mostrarán alertas específicas para códigos MFA incorrectos
+- Aparecerá un alert automático con instrucciones cuando falle MFA
+
 ## 🤝 Contributing
 
 1. Fork the repository

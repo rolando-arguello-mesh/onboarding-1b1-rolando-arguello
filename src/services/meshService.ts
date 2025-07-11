@@ -392,7 +392,139 @@ export class MeshService {
     }
   }
 
-  // Execute a transfer
+  // Execute a transfer using Link SDK (handles MFA automatically)
+  static async executeTransferWithSDK(
+    fromConnectionId: string,
+    toAddress: string,
+    amount: number,
+    currency: string = 'USDC',
+    network: string = 'base'
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      // First, get the network ID for the specified network
+      const networkId = await this.getNetworkId(network);
+      
+      // Generate link token with transfer options
+      const linkTokenResponse = await api.post('/link-token', {
+        transferOptions: {
+          toAddresses: [
+            {
+              networkId: networkId,
+              symbol: currency,
+              address: toAddress
+            }
+          ]
+        },
+        fromConnectionId: fromConnectionId,
+        userId: `user_${Date.now()}`,
+        amount: amount
+      });
+
+      const linkToken = linkTokenResponse.data.linkToken;
+      
+      return new Promise((resolve) => {
+        const link = createLink({
+          clientId: MESH_CLIENT_ID,
+          onIntegrationConnected: (payload) => {
+            console.log('Integration connected for transfer:', payload);
+          },
+          onTransferFinished: (payload) => {
+            console.log('🎉 Transfer finished via SDK:', payload);
+            if (payload.status === 'success' || payload.status === 'pending') {
+              resolve({ success: true });
+            } else {
+              resolve({ success: false, error: (payload as any).errorMessage || 'Transfer failed' });
+            }
+          },
+          onExit: (error, summary) => {
+            console.log('Transfer flow closed:', error, summary);
+            if (error) {
+              // Check if it's a specific MFA error
+              if (error.includes('Two factor') || error.includes('MFA') || error.includes('verification')) {
+                resolve({ 
+                  success: false, 
+                  error: 'MFA verification failed. Please try again with a fresh code from Coinbase.' 
+                });
+              } else {
+                resolve({ success: false, error: error });
+              }
+            } else {
+              // User closed without completing
+              resolve({ success: false, error: 'Transfer cancelled by user' });
+            }
+          },
+          onEvent: (event) => {
+            console.log('Transfer event:', event);
+            
+            // Handle specific transfer events
+            if (event.type === 'transferMfaRequired') {
+              console.log('🔐 MFA required - Mesh will handle this automatically');
+              console.log('💡 Tip: Make sure to enter the MFA code quickly after receiving it from Coinbase');
+            }
+            
+            if (event.type === 'transferMfaEntered') {
+              console.log('🔐 MFA code entered - processing...');
+            }
+            
+            if (event.type === 'transferExecutionError') {
+              console.log('❌ Transfer execution error:', (event as any).errorMessage);
+              
+              // Check for specific MFA errors
+              const errorMsg = (event as any).errorMessage || '';
+              if (errorMsg.includes('Two factor') || errorMsg.includes('twoFaFailed')) {
+                console.log('🚨 MFA ERROR DETECTED - CÓDIGO INCORRECTO:');
+                console.log('  🔥 PROBLEMA: Estás usando un código de 7 dígitos');
+                console.log('  ✅ SOLUCIÓN: Coinbase usa códigos de 6 dígitos únicamente');
+                console.log('  📱 FUENTE: Usa la app oficial de Coinbase, no SMS');
+                console.log('  ⚡ VELOCIDAD: Ingresa el código en menos de 10 segundos');
+                console.log('  🕒 TIEMPO: Sincroniza tu reloj automáticamente');
+                console.log('  🔄 REINTENTAR: Obtén un código completamente nuevo');
+                console.log('  ❌ EVITAR: Códigos de 7 dígitos son siempre inválidos');
+                
+                // Show alert to user
+                alert('🚨 CÓDIGO MFA INCORRECTO\n\n' +
+                     '❌ Problema: Códigos de 7 dígitos no funcionan\n' +
+                     '✅ Solución: Usa códigos de 6 dígitos de Coinbase\n' +
+                     '📱 Fuente: App oficial de Coinbase (no SMS)\n' +
+                     '⚡ Velocidad: Úsalo inmediatamente (menos de 10 segundos)');
+              }
+            }
+          }
+        });
+        
+        // Open the transfer UI with the link token
+        link.openLink(linkToken);
+      });
+      
+    } catch (error) {
+      console.error('Error executing transfer with SDK:', error);
+      throw new Error('Failed to execute transfer with SDK');
+    }
+  }
+
+  // Get network ID for a network name
+  static async getNetworkId(networkName: string): Promise<string> {
+    try {
+      const response = await api.get('/networks');
+      const networks = response.data.networks;
+      
+      // Find the network ID for the specified network
+      const network = networks.find((net: any) => 
+        net.name.toLowerCase() === networkName.toLowerCase()
+      );
+      
+      if (!network) {
+        throw new Error(`Network ${networkName} not found`);
+      }
+      
+      return network.id;
+    } catch (error) {
+      console.error('Error getting network ID:', error);
+      throw new Error('Failed to get network ID');
+    }
+  }
+
+  // Execute a transfer using existing direct API (keep for backward compatibility)
   static async executeTransfer(
     fromConnectionId: string,
     toAddress: string,
@@ -412,6 +544,31 @@ export class MeshService {
     } catch (error) {
       console.error('Error executing transfer:', error);
       throw new Error('Failed to execute transfer');
+    }
+  }
+
+  // Execute a transfer with MFA code
+  static async executeTransferWithMfa(
+    fromConnectionId: string,
+    toAddress: string,
+    amount: number,
+    currency: string = 'USDC',
+    network: string = 'base',
+    mfaCode: string
+  ): Promise<MeshTransfer> {
+    try {
+      const response = await api.post('/transfer-with-mfa', {
+        fromConnectionId,
+        toAddress,
+        amount,
+        currency,
+        network,
+        mfaCode,
+      });
+      return response.data.transfer;
+    } catch (error) {
+      console.error('Error executing transfer with MFA:', error);
+      throw new Error('Failed to execute transfer with MFA');
     }
   }
 

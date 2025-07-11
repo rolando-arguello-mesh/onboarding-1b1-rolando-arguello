@@ -662,6 +662,77 @@ async function getBaseNetworkId() {
   return baseNetwork.id;
 }
 
+// Generate link token for transfers with transfer options
+app.post('/api/mesh/link-token', async (req, res) => {
+  try {
+    const { transferOptions, fromConnectionId, userId, amount } = req.body;
+    
+    console.log('🔗 Generating link token for transfer...');
+    console.log('  - Transfer Options:', JSON.stringify(transferOptions, null, 2));
+    console.log('  - From Connection:', fromConnectionId);
+    console.log('  - User ID:', userId);
+    console.log('  - Amount:', amount);
+    
+    // Get connection data to determine integration
+    const connectionData = connectedAccounts.get(fromConnectionId);
+    if (!connectionData) {
+      return res.status(404).json({ error: 'Connection not found. Please reconnect your account.' });
+    }
+    
+    const brokerType = connectionData.accessToken?.brokerType;
+    const realAccessToken = connectionData.accessToken?.accountTokens?.[0]?.accessToken;
+    
+    if (!realAccessToken) {
+      return res.status(400).json({ error: 'Invalid access token for connection' });
+    }
+    
+    // Get the correct integration ID based on broker type
+    let integrationId;
+    if (brokerType === 'coinbase') {
+      integrationId = '47624467-e52e-4938-a41a-7926b6c27acf'; // Coinbase integration ID
+    } else if (brokerType === 'phantom') {
+      integrationId = '757e703f-a8fe-4dc4-d0ec-08dc6737ad96'; // Phantom integration ID
+    } else {
+      return res.status(400).json({ error: 'Unsupported broker type for transfers' });
+    }
+    
+    // Generate link token with transfer options
+    const linkTokenPayload = {
+      userId: userId,
+      transferOptions: transferOptions,
+      restrictMultipleAccounts: true,
+      integrationId: integrationId
+    };
+    
+    console.log('🔗 Link token payload:', JSON.stringify(linkTokenPayload, null, 2));
+    
+    const response = await meshAPI.post('/api/v1/linktoken', linkTokenPayload);
+    
+    console.log('✅ Link token generated successfully for transfer');
+    res.json({ linkToken: response.data.content.linkToken });
+    
+  } catch (error) {
+    console.error('❌ Error generating link token for transfer:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to generate link token for transfer' });
+  }
+});
+
+// Get available networks
+app.get('/api/mesh/networks', async (req, res) => {
+  try {
+    console.log('🌐 Getting available networks...');
+    
+    const response = await meshAPI.get('/api/v1/transfers/managed/networks');
+    
+    console.log('✅ Networks retrieved successfully');
+    res.json({ networks: response.data.content.networks });
+    
+  } catch (error) {
+    console.error('❌ Error getting networks:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to get networks' });
+  }
+});
+
 // Execute transfer (3-step flow: configure -> preview -> execute)
 app.post('/api/mesh/transfer', async (req, res) => {
   try {
@@ -867,33 +938,131 @@ app.post('/api/mesh/transfer', async (req, res) => {
       // Note: MfaCode would be included here if required
     });
 
+    console.log('🔍 RAW Execute response status:', executeResponse.status);
+    console.log('🔍 RAW Execute response data:', JSON.stringify(executeResponse.data, null, 2));
+
+    // Check if MFA is required
+    const isMfaRequired = executeResponse.data?.content?.status === 'mfaRequired';
+    console.log('🔍 Is MFA required?', isMfaRequired);
+
+    if (isMfaRequired) {
+      console.log('🔐 MFA is required for this transfer');
+      return res.status(400).json({
+        error: 'MFA verification required. Please use the verification code form.',
+        mfaRequired: true,
+        details: executeResponse.data,
+        step: 'mfa_required'
+      });
+    }
+
+    // Check if the response indicates actual success or failure
+    const isActualSuccess = executeResponse.status === 200 && 
+                           executeResponse.data && 
+                           !executeResponse.data.error && 
+                           !executeResponse.data.ErrorMessage &&
+                           executeResponse.data?.content?.status !== 'mfaRequired';
+
+    console.log('🔍 Is actual success?', isActualSuccess);
+
+    if (!isActualSuccess) {
+      console.error('❌ Transfer execution failed despite 200 status');
+      console.error('❌ Error in response:', executeResponse.data.error || executeResponse.data.ErrorMessage || 'Unknown error');
+      
+      return res.status(500).json({
+        error: executeResponse.data.error || executeResponse.data.ErrorMessage || 'Transfer execution failed',
+        details: executeResponse.data,
+        step: 'transfer_execution_failed'
+      });
+    }
+
     console.log('✅ Step 3 completed: Transfer executed successfully!');
-    console.log('🔍 Execute response structure:', JSON.stringify(executeResponse.data, null, 2));
 
     // Handle different possible response structures
-    const transferResult = executeResponse.data.TransferResult || 
+    const transferResult = executeResponse.data.content?.executeTransferResult || 
+                          executeResponse.data.executeTransferResult ||
+                          executeResponse.data.content?.transferResult ||
+                          executeResponse.data.transferResult ||
+                          executeResponse.data.TransferResult || 
                           executeResponse.data.content || 
                           executeResponse.data;
     
     console.log('🔍 Transfer result structure:', JSON.stringify(transferResult, null, 2));
     
+    // Check if we have actual transfer data
+    const hasTransferData = transferResult && (
+      transferResult.transferId || 
+      transferResult.TransferId || 
+      transferResult.id ||
+      transferResult.status ||
+      transferResult.Status
+    );
+    
+    console.log('🔍 Has actual transfer data?', hasTransferData);
+    
+    if (!hasTransferData) {
+      console.error('❌ No transfer data found in response');
+      return res.status(500).json({
+        error: 'Transfer response missing transfer data',
+        details: executeResponse.data,
+        step: 'missing_transfer_data'
+      });
+    }
+    
+    // Extract transfer details
+    const transferId = transferResult.transferId || transferResult.TransferId || transferResult.id || 'unknown';
+    const transferStatus = (transferResult.status || transferResult.Status || 'pending').toLowerCase();
+    const transferAmount = transferResult.amount || transferResult.Amount || amount;
+    const transferHash = transferResult.hash || transferResult.Hash || transferResult.txHash || null;
+    
+    console.log('🔍 Final transfer details:');
+    console.log('  - Transfer ID:', transferId);
+    console.log('  - Transfer Status:', transferStatus);
+    console.log('  - Transfer Amount:', transferAmount);
+    console.log('  - Transfer Hash:', transferHash);
+    
+    // Check if the transfer status indicates actual success
+    const isTransferSuccessful = transferStatus === 'completed' || 
+                                transferStatus === 'success' || 
+                                transferStatus === 'confirmed' ||
+                                (transferStatus === 'pending' && transferHash); // Pending with hash might be successful
+    
+    console.log('🔍 Is transfer actually successful?', isTransferSuccessful);
+    
+    if (!isTransferSuccessful && transferStatus !== 'pending') {
+      console.error('❌ Transfer failed with status:', transferStatus);
+      return res.status(500).json({
+        error: `Transfer failed with status: ${transferStatus}`,
+        transferStatus: transferStatus,
+        transferId: transferId,
+        details: transferResult,
+        step: 'transfer_failed'
+      });
+    }
+    
+    // If pending, warn but don't fail
+    if (transferStatus === 'pending') {
+      console.log('⚠️ Transfer is pending - may take time to complete');
+    }
+    
     res.json({
       transfer: {
-        id: transferResult.TransferId || transferResult.transferId || transferResult.id || 'unknown',
+        id: transferId,
         fromAccount: fromConnectionId,
         toAccount: transferResult.ToAddress || transferResult.toAddress || (toAddress || APP_WALLET_ADDRESS),
-        amount: transferResult.Amount || transferResult.amount || amount,
+        amount: transferAmount,
         currency: transferResult.Symbol || transferResult.symbol || currency,
         network: transferResult.NetworkName || transferResult.networkName || 'Base',
-        status: (transferResult.Status || transferResult.status || 'pending').toLowerCase(),
+        status: transferStatus,
         timestamp: new Date().toISOString(),
-        hash: transferResult.Hash || transferResult.hash || transferResult.txHash || null,
+        hash: transferHash,
         networkId: transferResult.NetworkId || transferResult.networkId || baseNetworkId,
         fees: {
           network: transferResult.NetworkGasFee || transferResult.networkGasFee || null,
           institution: transferResult.InstitutionTransferFee || transferResult.institutionTransferFee || null,
           total: transferResult.TotalTransferFeeFiat || transferResult.totalTransferFeeFiat || null
-        }
+        },
+        actuallySuccessful: isTransferSuccessful,
+        rawStatus: transferResult.status || transferResult.Status
       }
     });
 
@@ -918,10 +1087,401 @@ app.post('/api/mesh/transfer', async (req, res) => {
       errorMessage = error.message;
     }
     
+    // Check if it's an MFA-related error
+    const isMfaError = errorMessage.toLowerCase().includes('mfa') || 
+                      errorMessage.toLowerCase().includes('verification') ||
+                      errorMessage.toLowerCase().includes('code') ||
+                      errorMessage.toLowerCase().includes('authentication') ||
+                      errorMessage.toLowerCase().includes('multi-factor') ||
+                      statusCode === 401 ||
+                      statusCode === 403;
+    
+    if (isMfaError) {
+      errorMessage = 'MFA verification required. Please use the verification code form.';
+    }
+    
     res.status(statusCode).json({ 
       error: errorMessage,
       details: error.response?.data || null,
-      step: 'transfer_execution'
+      step: 'transfer_execution',
+      mfaRequired: isMfaError
+    });
+  }
+});
+
+// Execute transfer with MFA code (3-step flow: configure -> preview -> execute with MFA)
+app.post('/api/mesh/transfer-with-mfa', async (req, res) => {
+  try {
+    const { fromConnectionId, toAddress, amount, currency = 'USDC', network = 'base', mfaCode } = req.body;
+    
+    console.log('🔐 Starting managed transfer process with MFA...');
+    console.log('  - From Connection:', fromConnectionId);
+    console.log('  - To Address:', toAddress || APP_WALLET_ADDRESS);
+    console.log('  - Amount:', amount, currency);
+    console.log('  - Network:', network);
+    console.log('  - MFA Code provided:', !!mfaCode);
+
+    if (!mfaCode || mfaCode.trim().length === 0) {
+      return res.status(400).json({ error: 'MFA code is required' });
+    }
+    
+    // Get connection data
+    const connectionData = connectedAccounts.get(fromConnectionId);
+    if (!connectionData) {
+      return res.status(404).json({ error: 'Connection not found. Please reconnect your account.' });
+    }
+
+    // Extract access token
+    const realAccessToken = connectionData.accessToken?.accountTokens?.[0]?.accessToken;
+    const brokerType = connectionData.accessToken?.brokerType;
+    
+    if (!realAccessToken) {
+      return res.status(400).json({ error: 'Invalid access token for connection' });
+    }
+
+    // Step 1: Get Base network ID
+    const baseNetworkId = await getBaseNetworkId();
+    if (!baseNetworkId) {
+      return res.status(400).json({ error: 'Base network not supported' });
+    }
+
+    console.log('📡 Step 1: Configure transfer...');
+    console.log('  - Base Network ID:', baseNetworkId);
+    console.log('  - Broker Type:', brokerType);
+    console.log('  - Access Token (first 20 chars):', realAccessToken.substring(0, 20) + '...');
+    
+    // Step 2: Configure transfer
+    const configurePayload = {
+      FromAuthToken: realAccessToken,  // Correct PascalCase per docs
+      FromType: brokerType,           // Correct PascalCase per docs
+      ToAddresses: [{                 // Correct PascalCase per docs
+        NetworkId: baseNetworkId,     // Correct PascalCase per docs
+        Symbol: currency,             // Correct PascalCase per docs
+        Address: toAddress || APP_WALLET_ADDRESS  // Correct PascalCase per docs
+      }]
+    };
+    
+    console.log('📡 Configure payload:', JSON.stringify(configurePayload, null, 2));
+    
+    let configureResponse;
+    try {
+      configureResponse = await meshAPI.post('/api/v1/transfers/managed/configure', configurePayload);
+    } catch (configureError) {
+      console.error('❌ Configure API call failed:', configureError.message);
+      console.error('❌ Configure API error response:', JSON.stringify(configureError.response?.data, null, 2));
+      console.error('❌ Configure API error status:', configureError.response?.status);
+      
+      return res.status(500).json({ 
+        error: 'Configure API call failed',
+        message: configureError.message,
+        response: configureError.response?.data,
+        status: configureError.response?.status
+      });
+    }
+
+    console.log('✅ Step 1 completed: Transfer configured');
+    console.log('🔍 Configure response status:', configureResponse.status);
+    console.log('🔍 Configure response statusText:', configureResponse.statusText);
+    console.log('🔍 Full Configure response:', JSON.stringify(configureResponse.data, null, 2));
+    
+    // Check if configure response indicates success
+    if (configureResponse.status !== 200) {
+      console.error('❌ Configure request failed with status:', configureResponse.status);
+      return res.status(500).json({ 
+        error: 'Configure request failed',
+        status: configureResponse.status,
+        response: configureResponse.data
+      });
+    }
+    
+    // Check if we have the expected structure
+    if (!configureResponse.data || !configureResponse.data.content) {
+      console.error('❌ Configure response missing content structure');
+      return res.status(500).json({ 
+        error: 'Invalid configure response structure', 
+        response: configureResponse.data 
+      });
+    }
+    
+    const holdings = configureResponse.data.content.holdings;
+    
+    // Find the matching asset
+    const asset = holdings.find(h => h.symbol === currency);
+    if (!asset) {
+      return res.status(400).json({ error: `Asset ${currency} not available for transfer` });
+    }
+
+    const network_info = asset.networks.find(n => n.id === baseNetworkId);
+    if (!network_info || !network_info.eligibleForTransfer) {
+      return res.status(400).json({ error: `${currency} transfers not eligible on Base network` });
+    }
+
+    // Validate amount limits
+    if (amount < network_info.minimumAmount || amount > network_info.maximumAmount) {
+      return res.status(400).json({ 
+        error: `Amount ${amount} ${currency} is outside allowed range (${network_info.minimumAmount} - ${network_info.maximumAmount})` 
+      });
+    }
+
+    console.log('📡 Step 2: Preview transfer...');
+
+    // Step 3: Preview transfer
+    const previewPayload = {
+      FromAuthToken: realAccessToken,   // Correct PascalCase per docs
+      FromType: brokerType,            // Correct PascalCase per docs
+      NetworkId: baseNetworkId,        // Correct PascalCase per docs
+      Symbol: currency,                // Correct PascalCase per docs
+      ToAddress: toAddress || APP_WALLET_ADDRESS, // Correct PascalCase per docs
+      Amount: amount                   // Correct PascalCase per docs
+    };
+    
+    console.log('📡 Preview payload:', JSON.stringify(previewPayload, null, 2));
+    
+    let previewResponse;
+    try {
+      previewResponse = await meshAPI.post('/api/v1/transfers/managed/preview', previewPayload);
+    } catch (previewError) {
+      console.error('❌ Preview API call failed:', previewError.message);
+      console.error('❌ Preview API error response:', JSON.stringify(previewError.response?.data, null, 2));
+      console.error('❌ Preview API error status:', previewError.response?.status);
+      
+      return res.status(500).json({ 
+        error: 'Preview API call failed',
+        message: previewError.message,
+        response: previewError.response?.data,
+        status: previewError.response?.status
+      });
+    }
+
+    console.log('✅ Step 2 completed: Transfer previewed');
+    console.log('🔍 Preview response status:', previewResponse.status);
+    console.log('🔍 Preview response statusText:', previewResponse.statusText);
+    console.log('🔍 Full Preview response:', JSON.stringify(previewResponse.data, null, 2));
+    
+    // Check if preview response indicates success
+    if (previewResponse.status !== 200) {
+      console.error('❌ Preview request failed with status:', previewResponse.status);
+      return res.status(500).json({ 
+        error: 'Preview request failed',
+        status: previewResponse.status,
+        response: previewResponse.data
+      });
+    }
+
+    // Handle different possible response structures
+    let previewResult = previewResponse.data.content?.previewResult || 
+                       previewResponse.data.previewResult || 
+                       previewResponse.data.content || 
+                       previewResponse.data;
+    
+    console.log('🔍 Preview result structure:', JSON.stringify(previewResult, null, 2));
+    
+    // Try to get PreviewId from the response - check all possible locations
+    const previewId = previewResult.previewId || 
+                     previewResult.PreviewId || 
+                     previewResult.id ||
+                     previewResponse.data.content?.previewResult?.previewId ||
+                     previewResponse.data.PreviewId ||
+                     previewResponse.data.previewId ||
+                     previewResponse.data.id;
+    
+    console.log('🔍 Searching for PreviewId in response:');
+    console.log('  - previewResult.PreviewId:', previewResult.PreviewId);
+    console.log('  - previewResult.previewId:', previewResult.previewId);
+    console.log('  - previewResult.id:', previewResult.id);
+    console.log('  - previewResponse.data.PreviewId:', previewResponse.data.PreviewId);
+    console.log('  - previewResponse.data.previewId:', previewResponse.data.previewId);
+    console.log('  - previewResponse.data.id:', previewResponse.data.id);
+    console.log('  - Final previewId found:', previewId);
+
+    if (!previewId) {
+      console.error('❌ No preview ID found in response');
+      console.error('❌ Full raw Preview response data:', JSON.stringify(previewResponse.data, null, 2));
+      console.error('❌ Response status:', previewResponse.status);
+      console.error('❌ Response headers:', previewResponse.headers);
+      
+      return res.status(500).json({ 
+        error: 'Invalid preview response: missing preview ID',
+        previewResponse: previewResponse.data,
+        status: previewResponse.status
+      });
+    }
+
+    console.log('📡 Step 3: Execute transfer with MFA...');
+    console.log('  - Preview ID:', previewId);
+    console.log('  - MFA Code:', mfaCode.trim());
+    console.log('  - MFA Code Length:', mfaCode.trim().length);
+    console.log('  - Expires in:', previewResult.ExpiresIn || previewResult.expiresIn || 'unknown', 'seconds');
+    
+    // Validate MFA code format
+    const cleanMfaCode = mfaCode.trim();
+    if (cleanMfaCode.length !== 6) {
+      console.warn('⚠️  MFA code is not 6 digits. Coinbase codes are typically 6 digits.');
+      console.warn('⚠️  Received code length:', cleanMfaCode.length);
+    }
+    
+    if (!/^\d+$/.test(cleanMfaCode)) {
+      console.warn('⚠️  MFA code contains non-numeric characters');
+    }
+
+    // Step 4: Execute transfer with MFA
+    const executeResponse = await meshAPI.post('/api/v1/transfers/managed/execute', {
+      FromAuthToken: realAccessToken,  // Correct PascalCase per docs
+      FromType: brokerType,           // Correct PascalCase per docs
+      PreviewId: previewId,           // Correct PascalCase per docs
+      MfaCode: mfaCode.trim()        // MFA Code for verification
+    });
+
+    console.log('🔍 RAW Execute response status:', executeResponse.status);
+    console.log('🔍 RAW Execute response headers:', JSON.stringify(executeResponse.headers, null, 2));
+    console.log('🔍 RAW Execute response data:', JSON.stringify(executeResponse.data, null, 2));
+
+    // Check if the response indicates actual success or failure
+    const isActualSuccess = executeResponse.status === 200 && 
+                           executeResponse.data && 
+                           !executeResponse.data.error && 
+                           !executeResponse.data.ErrorMessage;
+
+    console.log('🔍 Is actual success?', isActualSuccess);
+
+    if (!isActualSuccess) {
+      console.error('❌ Transfer execution failed despite 200 status');
+      console.error('❌ Error in response:', executeResponse.data.error || executeResponse.data.ErrorMessage || 'Unknown error');
+      
+      return res.status(500).json({
+        error: executeResponse.data.error || executeResponse.data.ErrorMessage || 'Transfer execution failed',
+        details: executeResponse.data,
+        step: 'transfer_execution_failed'
+      });
+    }
+
+    console.log('✅ Step 3 completed: Transfer with MFA executed successfully!');
+
+    // Handle different possible response structures
+    const transferResult = executeResponse.data.content?.executeTransferResult || 
+                          executeResponse.data.executeTransferResult ||
+                          executeResponse.data.content?.transferResult ||
+                          executeResponse.data.transferResult ||
+                          executeResponse.data.TransferResult || 
+                          executeResponse.data.content || 
+                          executeResponse.data;
+    
+    console.log('🔍 Transfer result structure:', JSON.stringify(transferResult, null, 2));
+    
+    // Check if we have actual transfer data
+    const hasTransferData = transferResult && (
+      transferResult.transferId || 
+      transferResult.TransferId || 
+      transferResult.id ||
+      transferResult.status ||
+      transferResult.Status
+    );
+    
+    console.log('🔍 Has actual transfer data?', hasTransferData);
+    
+    if (!hasTransferData) {
+      console.error('❌ No transfer data found in response');
+      return res.status(500).json({
+        error: 'Transfer response missing transfer data',
+        details: executeResponse.data,
+        step: 'missing_transfer_data'
+      });
+    }
+    
+    // Extract transfer details
+    const transferId = transferResult.transferId || transferResult.TransferId || transferResult.id || 'unknown';
+    const transferStatus = (transferResult.status || transferResult.Status || 'pending').toLowerCase();
+    const transferAmount = transferResult.amount || transferResult.Amount || amount;
+    const transferHash = transferResult.hash || transferResult.Hash || transferResult.txHash || null;
+    
+    console.log('🔍 Final transfer details:');
+    console.log('  - Transfer ID:', transferId);
+    console.log('  - Transfer Status:', transferStatus);
+    console.log('  - Transfer Amount:', transferAmount);
+    console.log('  - Transfer Hash:', transferHash);
+    
+    // Check if the transfer status indicates actual success
+    const isTransferSuccessful = transferStatus === 'completed' || 
+                                transferStatus === 'success' || 
+                                transferStatus === 'confirmed' ||
+                                (transferStatus === 'pending' && transferHash); // Pending with hash might be successful
+    
+    console.log('🔍 Is transfer actually successful?', isTransferSuccessful);
+    
+    if (!isTransferSuccessful && transferStatus !== 'pending') {
+      console.error('❌ Transfer failed with status:', transferStatus);
+      return res.status(500).json({
+        error: `Transfer failed with status: ${transferStatus}`,
+        transferStatus: transferStatus,
+        transferId: transferId,
+        details: transferResult,
+        step: 'transfer_failed'
+      });
+    }
+    
+    // If pending, warn but don't fail
+    if (transferStatus === 'pending') {
+      console.log('⚠️ Transfer is pending - may take time to complete');
+    }
+
+    res.json({
+      transfer: {
+        id: transferId,
+        fromAccount: fromConnectionId,
+        toAccount: transferResult.toAddress || transferResult.ToAddress || (toAddress || APP_WALLET_ADDRESS),
+        amount: transferAmount,
+        currency: transferResult.symbol || transferResult.Symbol || currency,
+        network: transferResult.networkName || transferResult.NetworkName || 'Base',
+        status: transferStatus,
+        timestamp: new Date().toISOString(),
+        hash: transferHash,
+        networkId: transferResult.networkId || transferResult.NetworkId || baseNetworkId,
+        fees: {
+          network: transferResult.networkGasFee || transferResult.NetworkGasFee || null,
+          institution: transferResult.institutionTransferFee || transferResult.InstitutionTransferFee || null,
+          total: transferResult.totalTransferFeeFiat || transferResult.TotalTransferFeeFiat || null
+        },
+        actuallySuccessful: isTransferSuccessful,
+        rawStatus: transferResult.status || transferResult.Status
+      }
+    });
+
+      } catch (error) {
+    console.error('❌ Error executing managed transfer with MFA:', error.response?.data || error.message);
+    console.error('❌ Full error response:', JSON.stringify(error.response?.data, null, 2));
+    console.error('❌ Error stack:', error.stack);
+    
+    let errorMessage = 'Failed to execute transfer with MFA';
+    let statusCode = 500;
+    
+    if (error.response?.data?.ErrorMessage) {
+      errorMessage = error.response.data.ErrorMessage;
+      statusCode = error.response.status || 500;
+    } else if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+      statusCode = error.response.status || 500;
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+      statusCode = error.response.status || 500;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    // Enhanced error messages for MFA issues
+    if (errorMessage.includes('Two factor') || errorMessage.includes('twoFaFailed')) {
+      console.log('💡 MFA Error - Enhanced tips:');
+      console.log('  - Coinbase codes are 6 digits, not 7');
+      console.log('  - Codes expire in 30 seconds');
+      console.log('  - Make sure device time is accurate');
+      console.log('  - Try using a fresh code from Coinbase app');
+      
+      errorMessage = 'MFA code validation failed. Please use a fresh 6-digit code from Coinbase (codes expire in 30 seconds)';
+    }
+    
+    res.status(statusCode).json({ 
+      error: errorMessage,
+      details: error.response?.data || null,
+      step: 'transfer_execution_with_mfa'
     });
   }
 });

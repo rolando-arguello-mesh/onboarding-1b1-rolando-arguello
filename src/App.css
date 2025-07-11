@@ -360,6 +360,146 @@ body {
   font-size: 0.9em;
 }
 
+.transfer-pending {
+  border-color: #7CFC00;
+  background: rgba(124, 252, 0, 0.1);
+}
+
+.transfer-pending .success-icon {
+  background: linear-gradient(45deg, #7CFC00, #00FF41);
+}
+
+.status-pending {
+  color: #7CFC00;
+  font-weight: 700;
+  text-shadow: 0 0 5px rgba(124, 252, 0, 0.5);
+}
+
+.status-completed,
+.status-success,
+.status-confirmed {
+  color: #00FF41;
+  font-weight: 700;
+  text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+}
+
+.status-failed {
+  color: #7B1FA2;
+  font-weight: 700;
+  text-shadow: 0 0 5px rgba(123, 31, 162, 0.5);
+}
+
+.hash-display {
+  font-family: 'Courier New', monospace;
+  color: #00FF41;
+  background: rgba(0, 255, 65, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+/* MFA Tips Styles - Enhanced with Orange/Warning Colors */
+.mfa-tips {
+  background: rgba(255, 165, 0, 0.1);
+  border: 2px solid rgba(255, 165, 0, 0.6);
+  border-radius: 10px;
+  padding: 15px;
+  margin: 15px 0;
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.3);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(255, 165, 0, 0.3);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(255, 165, 0, 0.5);
+  }
+}
+
+.tips-header {
+  color: #FFA500;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  text-shadow: 0 0 5px rgba(255, 165, 0, 0.5);
+  font-weight: bold;
+}
+
+.tips-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.tips-list li {
+  color: #FFD700;
+  margin: 8px 0;
+  font-size: 0.85em;
+  padding-left: 20px;
+  line-height: 1.4;
+  font-weight: 500;
+  position: relative;
+}
+
+.tips-list li:before {
+  content: "⚡";
+  position: absolute;
+  left: 0;
+  color: #FFA500;
+  font-size: 0.8em;
+}
+
+.tips-list li:hover {
+  color: #FFFF00;
+  text-shadow: 0 0 3px rgba(255, 255, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .mfa-tips {
+    padding: 12px;
+    margin: 10px 0;
+  }
+  
+  .tips-header {
+    font-size: 0.85em;
+  }
+  
+  .tips-list li {
+    font-size: 0.8em;
+    margin: 6px 0;
+  }
+}
+
+.transfer-note {
+  background: rgba(124, 252, 0, 0.1);
+  border: 1px solid #7CFC00;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.transfer-note p {
+  color: #7CFC00;
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.transfer-warning {
+  background: rgba(123, 31, 162, 0.1);
+  border: 1px solid #7B1FA2;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.transfer-warning p {
+  color: #7B1FA2;
+  margin: 0;
+  font-size: 0.9em;
+}
+
 .clear-tokens-btn {
   background: linear-gradient(45deg, #7B1FA2, #6A1B9A);
   color: #00FF41;
@@ -748,6 +888,154 @@ body {
   
   .wallet-address {
     font-size: 0.8em;
+  }
+}
+
+/* MFA Section Styles */
+.mfa-section {
+  background: #1A1A1A;
+  border: 1px solid #00FF41;
+  border-radius: 15px;
+  padding: 25px;
+  margin-top: 20px;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+}
+
+.mfa-prompt {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.mfa-prompt h4 {
+  color: #00FF41;
+  font-size: 1.4em;
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: 0.8px;
+}
+
+.mfa-prompt p {
+  color: #00C853;
+  font-size: 1em;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.mfa-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+}
+
+.mfa-input {
+  background: #000000;
+  border: 1px solid #00FF41;
+  border-radius: 10px;
+  padding: 15px;
+  font-family: 'Courier New', monospace;
+  font-size: 1.2em;
+  color: #00FF41;
+  text-align: center;
+  letter-spacing: 3px;
+  width: 200px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+}
+
+.mfa-input:focus {
+  outline: none;
+  border-color: #7CFC00;
+  box-shadow: 0 0 20px rgba(124, 252, 0, 0.4);
+}
+
+.mfa-input::placeholder {
+  color: #00C853;
+  opacity: 0.7;
+  letter-spacing: 1px;
+}
+
+.mfa-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mfa-submit-btn {
+  background: linear-gradient(45deg, #00FF41, #7CFC00);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 25px;
+  font-size: 1em;
+  font-weight: 700;
+  color: #000000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+}
+
+.mfa-submit-btn:hover:not(:disabled) {
+  background: linear-gradient(45deg, #7CFC00, #00FF41);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 25px rgba(124, 252, 0, 0.4);
+}
+
+.mfa-submit-btn:disabled {
+  background: #1A1A1A;
+  color: #00C853;
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
+}
+
+.mfa-cancel-btn {
+  background: linear-gradient(45deg, #7B1FA2, #9C27B0);
+  border: none;
+  border-radius: 10px;
+  padding: 12px 25px;
+  font-size: 1em;
+  font-weight: 700;
+  color: #00FF41;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.5px;
+  box-shadow: 0 0 15px rgba(123, 31, 162, 0.3);
+}
+
+.mfa-cancel-btn:hover:not(:disabled) {
+  background: linear-gradient(45deg, #9C27B0, #7B1FA2);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 25px rgba(156, 39, 176, 0.4);
+}
+
+.mfa-cancel-btn:disabled {
+  background: #1A1A1A;
+  color: #00C853;
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
+}
+
+/* MFA Responsive Design */
+@media (max-width: 480px) {
+  .mfa-input {
+    width: 100%;
+    max-width: 250px;
+  }
+  
+  .mfa-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .mfa-submit-btn,
+  .mfa-cancel-btn {
+    width: 100%;
+    max-width: 200px;
   }
 }
 
