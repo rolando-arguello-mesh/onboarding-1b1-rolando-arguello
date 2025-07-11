@@ -492,16 +492,48 @@ function App() {
                           <small>Saved: {new Date(savedConnections[connection.id].savedAt).toLocaleString()}</small>
                         </div>
                       )}
+                      
+                      {/* Wallet Type Information */}
+                      <div className="wallet-type-info">
+                        <h4>
+                          {connection.type === 'cex' ? '🏦 Centralized Exchange' : '👻 Self-Custody Wallet'}
+                        </h4>
+                        <div className="wallet-type-description">
+                          {connection.type === 'cex' ? (
+                            <>
+                              <p><strong>✅ Automated Transfers:</strong> Mesh handles everything automatically</p>
+                              <p><strong>🔐 MFA Support:</strong> Built-in 2FA verification</p>
+                              <p><strong>⚡ Quick Process:</strong> Complete transfer in one modal</p>
+                            </>
+                          ) : (
+                            <>
+                              <p><strong>🔗 Wallet Integration:</strong> Redirects to your Phantom wallet</p>
+                              <p><strong>🔒 Your Control:</strong> You approve the transaction directly</p>
+                              <p><strong>🌐 On-Chain:</strong> Transaction broadcast to Solana network</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
                       <div className="connection-actions">
                         <button 
                           className="transfer-btn"
                           onClick={handleTransfer}
                           disabled={transferLoading || !appWalletAddress}
                         >
-                          {transferLoading ? '🔄 Transferring...' : '💸 Transfer $5 USDC to App'}
+                          {transferLoading ? '�� Transferring...' : 
+                           connection.type === 'cex' ? '💸 Transfer $5 USDC to App' : 
+                           '💸 Transfer $5 USDC to App (via Phantom)'}
                         </button>
                         
-
+                        {/* Add helpful note about transfer experience */}
+                        <div className="transfer-note">
+                          <p>
+                            <strong>💡 Transfer Process:</strong> 
+                            {connection.type === 'cex' ? 
+                              ' Mesh will handle the transfer directly from your Coinbase account.' :
+                              ' You\'ll be redirected to your Phantom wallet to approve the transfer.'}
+                          </p>
+                        </div>
                         
                         <button 
                           className="disconnect-btn"

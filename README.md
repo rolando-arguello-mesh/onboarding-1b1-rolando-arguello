@@ -1,254 +1,223 @@
 # 🔗 Mesh Integration Demo
 
-A comprehensive React TypeScript application that integrates with MeshConnect to connect Coinbase and Phantom Wallet, display portfolios, and execute USDC transfers on the Base network.
+A cryptocurrency wallet integration demo using Mesh Connect SDK for both Coinbase (CEX) and Phantom Wallet (self-custody).
 
-## ✨ Features
+## 🚀 Features
 
-- **Coinbase Integration**: Connect to Coinbase account (CEX)
-- **Phantom Wallet Integration**: Connect to Phantom Wallet (Self-custody)
-- **Portfolio Display**: View cryptocurrency holdings from both connections
-- **Transfer Functionality**: Move $5 USDC from accounts to app wallet
-- **Base Network**: All transfers execute on the Base network
-- **Modern UI**: Beautiful, responsive interface with gradient designs
-- **Real-time Updates**: Live portfolio and transfer status updates
+- **Dual Wallet Support**: Connect both Coinbase and Phantom Wallet
+- **Automated Transfers**: Transfer $5 USDC from connected accounts to app wallet
+- **MFA Support**: Built-in two-factor authentication for Coinbase
+- **Real-time Portfolio**: View crypto balances and holdings
+- **Persistent Sessions**: Save connection tokens for future use
+- **Matrix/Cyberpunk UI**: Modern dark theme with neon accents
 
-## 🚀 Getting Started
+## 💼 Wallet Types Supported
+
+### 🏦 Coinbase (Centralized Exchange)
+- **Type**: CEX (Centralized Exchange)
+- **Transfer Process**: Automated through Mesh APIs
+- **MFA**: Built-in 2FA verification within modal
+- **User Experience**: Complete transfer in one modal
+- **Requirements**: 6-digit MFA codes from Coinbase app
+
+### 👻 Phantom Wallet (Self-Custody)
+- **Type**: Self-Custody Wallet
+- **Transfer Process**: User redirected to Phantom wallet
+- **Approval**: User approves transaction directly in Phantom
+- **Network**: Transactions broadcast to Solana blockchain
+- **User Experience**: Modal opens → redirects to Phantom → user approves
+
+## 📋 Transfer Process Comparison
+
+| Feature | Coinbase (CEX) | Phantom (Self-Custody) |
+|---------|----------------|------------------------|
+| **Automation** | Fully automated | User approval required |
+| **MFA/2FA** | Built-in Mesh modal | Handled by wallet |
+| **Network** | Base (Ethereum L2) | Solana |
+| **Approval** | MFA code entry | Wallet signature |
+| **Speed** | Instant (after MFA) | Depends on network |
+| **Control** | Mesh handles all | User has full control |
+
+## 🔧 Setup Instructions
 
 ### Prerequisites
-
-- Node.js (v16 or higher)
-- npm or yarn
-- Mesh API credentials (Client ID and Secret)
+- Node.js 14+ and npm/yarn
+- Mesh Connect API keys (sandbox and production)
 
 ### Installation
-
-1. **Clone the repository**
 ```bash
+# Clone repository
 git clone <repository-url>
-cd 1B1
-```
+cd mesh-integration-demo
 
-2. **Install dependencies**
-```bash
+# Install dependencies
 npm install
+
+# Start development servers
+npm run dev        # Frontend (React)
+npm run server     # Backend (Node.js)
 ```
 
-3. **Set up environment variables**
+### Configuration
+1. Get your Mesh Connect API keys from [Mesh Dashboard](https://dashboard.meshconnect.com)
+2. Add your API keys to the server configuration
+3. Update allowed callback URLs in Mesh Dashboard
 
-Create a `.env` file in the root directory with your Mesh API credentials:
+## 📚 Implementation Details
 
-```env
-# Mesh API Configuration
-MESH_CLIENT_ID=your_mesh_client_id
-MESH_CLIENT_SECRET=your_mesh_client_secret
-MESH_BASE_URL=https://integration-api.meshconnect.com
-MESH_ENVIRONMENT=sandbox
+### Phantom Wallet Implementation
+The Phantom wallet integration uses the same Mesh Connect SDK but with different behavior:
 
-# Server Configuration
-PORT=3001
-NODE_ENV=development
+```javascript
+// Frontend: Same method for both wallet types
+const result = await MeshService.executeTransferWithSDK(
+  connection.id,
+  appWalletAddress,
+  5,
+  'USDC',
+  'base'
+);
 
-# Application Configuration
-APP_WALLET_ADDRESS=your_app_wallet_address
+// Backend: Automatic detection of wallet type
+const brokerType = connectionData.accessToken?.brokerType;
+if (brokerType === 'phantom') {
+  integrationId = '757e703f-a8fe-4dc4-d0ec-08dc6737ad96'; // Phantom integration ID
+} else if (brokerType === 'coinbase') {
+  integrationId = '47624467-e52e-4938-a41a-7926b6c27acf'; // Coinbase integration ID
+}
 ```
 
-4. **Start the development servers**
+### Transfer Flow for Phantom
+1. **User clicks transfer button**
+2. **Mesh SDK opens modal**
+3. **User redirected to Phantom wallet**
+4. **User approves transaction in Phantom**
+5. **Transaction submitted to Solana network**
+6. **Confirmation returned to app**
 
-Start the backend server:
-```bash
-npm run server
-```
+### Transfer Flow for Coinbase
+1. **User clicks transfer button**
+2. **Mesh SDK opens modal**
+3. **User enters MFA code in modal**
+4. **Mesh handles transfer via API**
+5. **Transfer completed automatically**
+6. **Confirmation returned to app**
 
-In a new terminal, start the React frontend:
-```bash
-npm start
-```
+## 🔐 Security Features
 
-Or run both simultaneously:
-```bash
-npm run dev
-```
+### Coinbase Security
+- **MFA Validation**: Real-time validation of 6-digit codes
+- **Token Encryption**: Secure token storage and transmission
+- **Session Management**: Automatic token refresh
+- **Error Handling**: Comprehensive MFA error detection
 
-## 🏗️ Architecture
+### Phantom Security
+- **User Control**: All transactions require user approval
+- **Wallet Signature**: Cryptographic signatures for all transactions
+- **Network Validation**: Transactions verified on Solana network
+- **No Stored Keys**: App never stores private keys
 
-### Frontend (React TypeScript)
-- **Components**: Modern React functional components with hooks
-- **State Management**: React useState for application state
-- **Styling**: Custom CSS with gradients and animations
-- **API Integration**: Axios for HTTP requests to backend
+## 🚨 Common Issues & Solutions
 
-### Backend (Node.js/Express)
-- **API Routes**: RESTful endpoints for Mesh integration
-- **Mesh SDK**: Direct integration with Mesh API
-- **CORS**: Configured for frontend communication
-- **Error Handling**: Comprehensive error management
+### Phantom Wallet Issues
+- **Wallet Not Found**: Ensure Phantom extension is installed
+- **Transaction Rejected**: User must approve in Phantom wallet
+- **Network Issues**: Check Solana network status
+- **Connection Lost**: Reconnect wallet if session expires
 
-## 🔌 API Endpoints
-
-### Mesh Integration
-- `GET /api/mesh/link-token` - Get link token for Coinbase
-- `GET /api/mesh/link-token-wallet` - Get link token for wallets
-- `POST /api/mesh/accounts` - Get account information
-- `POST /api/mesh/portfolio` - Get portfolio holdings
-- `POST /api/mesh/transfer` - Execute USDC transfer
-- `POST /api/mesh/transfers` - Get transfer history
-
-### Utilities
-- `GET /api/health` - Health check endpoint
-- `GET /api/wallet-address` - Get app wallet address
-
-## 💰 Transfer Flow
-
-### CEX (Coinbase) Transfer
-1. User connects Coinbase account via MeshConnect
-2. System retrieves portfolio and account information
-3. User initiates $5 USDC transfer to app wallet
-4. Transfer executes via Mesh API (not Link UI)
-5. Transfer status updates in real-time
-
-### Self-Custody Wallet Transfer
-1. User connects Phantom Wallet (or compatible self-custody wallet)
-2. System retrieves portfolio on Base network
-3. User initiates $5 worth of USDC transfer
-4. Transfer executes on Base network
-5. Portfolio updates reflect the transfer
-
-## 🛠️ Technology Stack
-
-- **Frontend**: React 19, TypeScript, CSS3
-- **Backend**: Node.js, Express.js
-- **Integration**: MeshConnect SDK
-- **Network**: Base (Ethereum Layer 2)
-- **Cryptocurrency**: USDC (USD Coin)
-- **Development**: Nodemon, Concurrently
-
-## 🎨 UI/UX Features
-
-- **Responsive Design**: Works on desktop and mobile
-- **Modern Gradients**: Beautiful color schemes
-- **Smooth Animations**: CSS transitions and hover effects
-- **Real-time Updates**: Live status indicators
-- **Error Handling**: User-friendly error messages
-- **Loading States**: Visual feedback during operations
-
-## 📱 Usage
-
-1. **Connect Accounts**: Use the connection buttons to link your Coinbase and Phantom Wallet
-2. **View Portfolio**: See your cryptocurrency holdings from both accounts
-3. **Execute Transfers**: Use the transfer buttons to move $5 USDC to the app wallet
-4. **Monitor Status**: Track transfer progress and history
-
-## 🔧 Development
-
-### Project Structure
-```
-src/
-├── components/          # React components
-├── services/           # API service classes
-├── types/             # TypeScript type definitions
-├── App.tsx            # Main application component
-├── App.css            # Application styles
-└── index.tsx          # Application entry point
-
-server/
-└── index.js           # Express server with Mesh integration
-```
-
-### Key Files
-- `src/services/meshService.ts` - Mesh API integration
-- `src/types/index.ts` - TypeScript interfaces
-- `server/index.js` - Backend API server
-- `src/App.tsx` - Main React component
-- `src/App.css` - UI styling
+### Coinbase Issues
+- **MFA Codes**: Use 6-digit codes from Coinbase app (not SMS)
+- **Code Timing**: Enter codes within 10 seconds of generation
+- **7-digit Codes**: These are invalid - only use 6-digit codes
+- **Clock Sync**: Ensure device clock is synchronized
 
 ## 🧪 Testing
 
-Run the test suite:
+### Frontend Tests
 ```bash
-npm test
+npm test                    # Run all tests
+npm test -- --coverage     # Run with coverage
+npm test -- --watch        # Run in watch mode
 ```
 
-## 🚢 Deployment
-
-Build the production version:
+### Backend Tests
 ```bash
-npm run build
+npm run test:server         # Run server tests
+npm run test:integration    # Run integration tests
 ```
 
-The app is configured to work with both development and production environments.
+## 📊 API Endpoints
 
-## 📝 Notes
+### Phantom Wallet Endpoints
+- `GET /api/mesh/link-token-wallet` - Get Phantom link token
+- `POST /api/mesh/link-token` - Generate transfer link token
+- `POST /api/mesh/transfer` - Execute transfer (works for both wallets)
 
-- **Happy Path Implementation**: Focus on successful user flows
-- **Single Network**: Base network for all operations
-- **Simplified UX**: Clean, intuitive interface
-- **Real Mesh Integration**: Uses actual Mesh API endpoints
-- **Environment Variables**: Secure API credential management
+### Coinbase Endpoints
+- `GET /api/mesh/link-token` - Get Coinbase link token
+- `POST /api/mesh/transfer-with-mfa` - Execute transfer with MFA
+- `POST /api/mesh/crypto-balances` - Get crypto balances
 
-## 🔒 Security
+## 📱 Responsive Design
 
-- Environment variables for sensitive data
-- CORS configuration for API access
-- Input validation and error handling
-- Secure API communication with Mesh
+The app works on all devices:
+- **Desktop**: Full feature set with dual-column layout
+- **Tablet**: Optimized layout with stacked columns
+- **Mobile**: Mobile-first responsive design
 
-## 🚨 MFA Troubleshooting - Coinbase Transfers
+## 🎨 UI/UX Features
 
-### Problema: "Two factor code validation failed"
+- **Matrix Theme**: Dark cyberpunk aesthetic
+- **Neon Accents**: Green/cyan color scheme
+- **Animated Elements**: Smooth transitions and hover effects
+- **Clear Status**: Visual indicators for connection and transfer status
+- **Wallet-Specific UI**: Different experiences for CEX vs self-custody
 
-**Causa más común:** Estás usando códigos MFA de 7 dígitos cuando Coinbase requiere códigos de 6 dígitos.
+## 📈 Performance
 
-#### ✅ **Solución Paso a Paso:**
+- **Lazy Loading**: Components loaded on demand
+- **Caching**: Connection tokens cached locally
+- **Optimization**: Minimized API calls
+- **Error Recovery**: Graceful handling of network issues
 
-1. **🔍 Verifica el código MFA:**
-   - ❌ **Incorrecto:** `3032668` (7 dígitos)
-   - ✅ **Correcto:** `303266` (6 dígitos)
+## 📝 Development Notes
 
-2. **📱 Fuente del código:**
-   - ✅ **Usar:** App oficial de Coinbase
-   - ❌ **Evitar:** SMS o códigos de texto
+### Code Architecture
+- **Frontend**: React with TypeScript
+- **Backend**: Node.js with Express
+- **API Integration**: Mesh Connect SDK
+- **State Management**: React hooks
+- **Styling**: Custom CSS with Matrix theme
 
-3. **⚡ Timing crítico:**
-   - Ingresa el código en **menos de 10 segundos**
-   - Los códigos expiran en **30 segundos**
-   - Usa códigos **completamente nuevos**
+### Key Files
+- `src/App.tsx` - Main application component
+- `src/services/meshService.ts` - Mesh SDK integration
+- `server/index.js` - Backend API server
+- `src/types/index.ts` - TypeScript definitions
 
-4. **🕒 Sincronización de tiempo:**
-   - Activa sincronización automática de tiempo
-   - Verifica que tu reloj esté exacto
+## 🚀 Deployment
 
-5. **🔄 Si falla:**
-   - Cierra el modal de Mesh Pay
-   - Obtén un código completamente nuevo
-   - Inténtalo inmediatamente
+### Production Setup
+1. Build frontend: `npm run build`
+2. Configure production API keys
+3. Set up domain and SSL
+4. Update Mesh Dashboard callbacks
+5. Deploy to hosting provider
 
-#### 📊 **Endpoints Utilizados:**
-- **SDK Frontend:** `/api/v1/catalog/transfers/execute` (normal)
-- **API Backend:** `/api/v1/transfers/managed/execute` (normal)
+### Environment Variables
+```bash
+MESH_CLIENT_ID=your_client_id
+MESH_CLIENT_SECRET=your_client_secret
+MESH_ENVIRONMENT=production
+```
 
-#### 🛠️ **Debugging:**
-- Los logs mostrarán alertas específicas para códigos MFA incorrectos
-- Aparecerá un alert automático con instrucciones cuando falle MFA
+## 📞 Support
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+For questions or issues:
+- **Mesh Connect**: [Documentation](https://docs.meshconnect.com)
+- **Phantom Wallet**: [Support](https://phantom.app/help)
+- **Coinbase**: [Developer Portal](https://developers.coinbase.com)
 
 ## 📄 License
 
 This project is licensed under the MIT License.
-
-## 🆘 Support
-
-For issues or questions:
-1. Check the console for error messages
-2. Verify your Mesh API credentials
-3. Ensure proper network connectivity
-4. Review the API documentation
-
----
-
-Built with ❤️ using React, TypeScript, and MeshConnect

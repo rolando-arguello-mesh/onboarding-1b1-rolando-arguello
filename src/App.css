@@ -545,6 +545,57 @@ body {
   font-size: 0.8em;
 }
 
+/* Wallet Type Info */
+.wallet-type-info {
+  background: rgba(26, 26, 26, 0.8);
+  border: 1px solid #00B140;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+  box-shadow: 0 0 15px rgba(0, 177, 64, 0.2);
+}
+
+.wallet-type-info h4 {
+  color: #00FF41;
+  margin: 0 0 15px 0;
+  font-size: 1.3em;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.wallet-type-description {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wallet-type-description p {
+  color: #00C853;
+  margin: 0;
+  font-size: 0.9em;
+  line-height: 1.4;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0, 177, 64, 0.1);
+}
+
+.wallet-type-description p:last-child {
+  border-bottom: none;
+}
+
+.wallet-type-description strong {
+  color: #00FF41;
+  font-weight: 700;
+}
+
+.wallet-type-description p:hover {
+  background: rgba(0, 255, 65, 0.05);
+  padding-left: 10px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
 /* Saved Connections Section */
 .saved-connections-section {
   margin-bottom: 25px;

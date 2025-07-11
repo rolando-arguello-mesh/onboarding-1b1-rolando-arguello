@@ -434,13 +434,13 @@ app.post('/api/mesh/portfolio', async (req, res) => {
         
         console.log('✅ MESH HOLDINGS API RESPONSE - Status:', response.status);
         console.log('✅ MESH HOLDINGS API RESPONSE - Structure:', JSON.stringify({
-          hasContent: !!response.data.content,
-          hasHoldings: !!response.data.content?.holdings,
-          holdingsCount: response.data.content?.holdings?.length || 0,
-          responseKeys: Object.keys(response.data || {}),
-          contentKeys: Object.keys(response.data?.content || {})
-        }, null, 2));
-        
+      hasContent: !!response.data.content,
+      hasHoldings: !!response.data.content?.holdings,
+      holdingsCount: response.data.content?.holdings?.length || 0,
+      responseKeys: Object.keys(response.data || {}),
+      contentKeys: Object.keys(response.data?.content || {})
+    }, null, 2));
+    
         // Extract holdings from the response - handle the real API structure
         let holdings = [];
         const content = response.data.content || {};
@@ -572,7 +572,7 @@ app.post('/api/mesh/portfolio', async (req, res) => {
       type: 'crypto',
       balance: holding.quantity || 0,
       currency: holding.symbol || 'Unknown',
-      network: holding.network || 'unknown',
+        network: holding.network || 'unknown',
       provider: brokerType,
       marketValue: holding.marketValue || 0,
       costBasis: holding.costBasis || 0,
