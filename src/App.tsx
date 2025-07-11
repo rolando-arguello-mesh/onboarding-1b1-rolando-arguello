@@ -501,20 +501,7 @@ function App() {
                           {transferLoading ? '🔄 Transferring...' : '💸 Transfer $5 USDC to App'}
                         </button>
                         
-                        {/* MFA Help Tips */}
-                        <div className="mfa-tips">
-                          <div className="tips-header">
-                            🚨 <strong>IMPORTANTE: Códigos MFA de Coinbase</strong>
-                          </div>
-                          <ul className="tips-list">
-                            <li>🔥 **SOLO 6 DÍGITOS** - No uses códigos de 7 dígitos</li>
-                            <li>⚡ **INMEDIATAMENTE** - Úsalos en menos de 10 segundos</li>
-                            <li>📱 **App de Coinbase** - Usa la app oficial, no SMS</li>
-                            <li>🕒 **Tiempo exacto** - Sincroniza tu reloj automáticamente</li>
-                            <li>🔄 **Código nuevo** - Si falla, obtén un código completamente nuevo</li>
-                            <li>❌ **Evita códigos de 7 dígitos** - Esos son inválidos</li>
-                          </ul>
-                        </div>
+
                         
                         <button 
                           className="disconnect-btn"
