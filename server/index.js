@@ -260,12 +260,59 @@ app.get('/api/mesh/integrations', async (req, res) => {
   }
 });
 
+// Helper function to get Binance integration ID dynamically
+async function getBinanceIntegrationId() {
+  try {
+    const integrationsResponse = await meshAPI.get('/api/v1/integrations');
+    const integrations = integrationsResponse.data.content?.items || [];
+    
+    // Find Binance integration
+    const binanceIntegration = integrations.find(integration => 
+      integration.name === 'Binance' || 
+      integration.type === 'binanceInternationalDirect' ||
+      integration.name?.toLowerCase().includes('binance')
+    );
+    
+    if (!binanceIntegration) {
+      throw new Error('Binance integration not found in available integrations');
+    }
+    
+    console.log('✅ Found Binance integration with ID:', binanceIntegration.id);
+    return binanceIntegration.id;
+  } catch (error) {
+    console.error('❌ Error fetching Binance integration ID:', error.message);
+    throw error;
+  }
+}
+
 // Get MeshConnect link token for Binance (goes directly to Binance)
 app.get('/api/mesh/link-token', async (req, res) => {
   try {
+    // Check if we have valid credentials
+    if (MESH_CLIENT_ID === 'your_mesh_client_id' || MESH_CLIENT_SECRET === 'your_mesh_client_secret') {
+      console.error('❌ Mesh Connect credentials not configured. Please set MESH_CLIENT_ID and MESH_CLIENT_SECRET in your .env file');
+      return res.status(500).json({ 
+        error: 'Mesh Connect credentials not configured. Please check your .env file.',
+        details: 'You need to set MESH_CLIENT_ID and MESH_CLIENT_SECRET with your actual Mesh Connect credentials'
+      });
+    }
+
+    // Get Binance integration ID dynamically
+    let binanceIntegrationId;
+    try {
+      binanceIntegrationId = await getBinanceIntegrationId();
+    } catch (integrationError) {
+      console.error('❌ Error fetching Binance integration ID:', integrationError.message);
+      return res.status(500).json({ 
+        error: 'Failed to fetch Binance integration',
+        details: 'Could not retrieve Binance integration from Mesh Connect'
+      });
+    }
+
+    // Now generate the link token with the real integration ID
     const response = await meshAPI.post('/api/v1/linktoken', {
       userId: 'user_binance_' + Date.now(),
-      integrationId: 'BINANCE_INTEGRATION_ID_PLACEHOLDER', // TODO: Replace with actual Binance integration ID
+      integrationId: binanceIntegrationId, // Use the real integration ID
       restrictMultipleAccounts: true
     });
     
@@ -273,7 +320,24 @@ app.get('/api/mesh/link-token', async (req, res) => {
     res.json({ linkToken: response.data.content.linkToken });
   } catch (error) {
     console.error('❌ Error generating Binance link token:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to generate link token' });
+    
+    // Provide more specific error messages
+    if (error.response?.status === 401) {
+      res.status(401).json({ 
+        error: 'Authentication failed with Mesh Connect',
+        details: 'Please check your MESH_CLIENT_ID and MESH_CLIENT_SECRET credentials'
+      });
+    } else if (error.response?.status === 400) {
+      res.status(400).json({ 
+        error: 'Invalid request to Mesh Connect',
+        details: error.response?.data?.message || 'Bad request format'
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to generate link token',
+        details: error.response?.data || error.message
+      });
+    }
   }
 });
 
@@ -690,7 +754,12 @@ app.post('/api/mesh/link-token', async (req, res) => {
     const brokerName = connectionData.accessToken?.brokerName;
     let integrationId;
     if (brokerType === 'binance' || brokerType === 'binanceInternational') {
-      integrationId = 'BINANCE_INTEGRATION_ID_PLACEHOLDER'; // TODO: Replace with actual Binance integration ID
+      try {
+        integrationId = await getBinanceIntegrationId(); // Use dynamic function to get real Binance integration ID
+      } catch (error) {
+        console.error('❌ Error getting Binance integration ID for transfers:', error.message);
+        return res.status(500).json({ error: 'Failed to get Binance integration ID for transfers' });
+      }
     } else if (brokerType === 'phantom' || brokerType === 'deFiWallet' || brokerName === 'Phantom') {
       integrationId = '757e703f-a8fe-4dc4-d0ec-08dc6737ad96'; // Phantom integration ID
     } else {
