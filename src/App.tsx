@@ -3,7 +3,7 @@ import { MeshService } from './services/meshService';
 import { MeshConnection, MeshPortfolio, MeshTransfer, CryptoBalanceData, USDCBalanceData } from './types';
 import './App.css';
 
-// App with separate buttons for Coinbase and Phantom Wallet
+// App with separate buttons for Binance and Phantom Wallet
 
 function App() {
   const [connection, setConnection] = useState<MeshConnection | null>(null);
@@ -26,19 +26,19 @@ function App() {
       setSavedConnections(saved);
       
       // If we have saved connections, check if any are still valid
-      const coinbaseCheck = MeshService.hasValidTokensForProvider('coinbase');
+      const binanceCheck = MeshService.hasValidTokensForProvider('binance');
       const phantomCheck = MeshService.hasValidTokensForProvider('phantom');
       
       console.log('🔍 Checking saved connections on app load:');
-      console.log('  - Coinbase tokens valid:', coinbaseCheck.hasTokens);
+      console.log('  - Binance tokens valid:', binanceCheck.hasTokens);
       console.log('  - Phantom tokens valid:', phantomCheck.hasTokens);
       
       // Auto-restore the most recent valid connection if available
-      if (coinbaseCheck.hasTokens && !connection) {
-        console.log('🔄 Auto-restoring Coinbase connection...');
+      if (binanceCheck.hasTokens && !connection) {
+        console.log('🔄 Auto-restoring Binance connection...');
         const restoredConnection: MeshConnection = {
-          id: coinbaseCheck.connectionId!,
-          provider: 'coinbase',
+          id: binanceCheck.connectionId!,
+          provider: 'binance',
           type: 'cex',
           connected: true,
           accounts: []
@@ -48,13 +48,13 @@ function App() {
         // First restore the connection in the server, then load data
         setTimeout(async () => {
           try {
-            await MeshService.restoreConnection(coinbaseCheck.connectionId!, coinbaseCheck.connection);
+            await MeshService.restoreConnection(binanceCheck.connectionId!, binanceCheck.connection);
             loadCryptoBalances(restoredConnection);
             loadUSDCBalanceByProvider(restoredConnection);
           } catch (error) {
-            console.error('❌ Failed to restore Coinbase connection:', error);
+            console.error('❌ Failed to restore Binance connection:', error);
             // Clear invalid connection
-            MeshService.clearSavedConnection(coinbaseCheck.connectionId!);
+            MeshService.clearSavedConnection(binanceCheck.connectionId!);
             setConnection(null);
           }
         }, 1000);
@@ -88,7 +88,7 @@ function App() {
     checkSavedConnections();
   }, []);
 
-  // Load crypto balances for connected account (Coinbase or Phantom)
+  // Load crypto balances for connected account (Binance or Phantom)
   const loadCryptoBalances = async (connectionToUse?: MeshConnection) => {
     const currentConnection = connectionToUse || connection;
     if (!currentConnection) return;
@@ -98,8 +98,8 @@ function App() {
       
       // Use specific endpoints for each provider
       let balanceData;
-      if (currentConnection.provider === 'coinbase') {
-        balanceData = await MeshService.getCoinbaseCryptoBalances();
+      if (currentConnection.provider === 'binance') {
+        balanceData = await MeshService.getBinanceCryptoBalances();
       } else if (currentConnection.provider === 'phantom') {
         // Use the new specific Phantom endpoint
         balanceData = await MeshService.getPhantomCryptoBalances();
@@ -142,8 +142,8 @@ function App() {
       
       // Use specific endpoints for each provider
       let usdcData;
-      if (currentConnection.provider === 'coinbase') {
-        usdcData = await MeshService.getCoinbaseUSDCBalance();
+      if (currentConnection.provider === 'binance') {
+        usdcData = await MeshService.getBinanceUSDCBalance();
       } else if (currentConnection.provider === 'phantom') {
         usdcData = await MeshService.getPhantomUSDCBalance();
       } else {
@@ -173,20 +173,20 @@ function App() {
     loadWalletAddress();
   }, []);
 
-  // Handle Coinbase connection
-  const handleConnectCoinbase = async () => {
+  // Handle Binance connection
+  const handleConnectBinance = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('Opening Coinbase connection...');
-      const result = await MeshService.openCoinbaseConnection();
+      console.log('Opening Binance connection...');
+      const result = await MeshService.openBinanceConnection();
       
       if (result.success && result.connectionId) {
         // Real connection successful
         const newConnection: MeshConnection = {
           id: result.connectionId,
-          provider: 'coinbase',
+          provider: 'binance',
           type: 'cex',
           connected: true,
           accounts: []
@@ -201,15 +201,15 @@ function App() {
           loadUSDCBalanceByProvider(newConnection);
         }, 2000);
         
-        console.log('Coinbase connected successfully with ID:', result.connectionId);
+        console.log('Binance connected successfully with ID:', result.connectionId);
       } else {
         // Connection failed
-        setError(result.error || 'Failed to connect to Coinbase');
+        setError(result.error || 'Failed to connect to Binance');
       }
       
     } catch (err) {
-      console.error('Error connecting to Coinbase:', err);
-      setError('Failed to connect to Coinbase');
+      console.error('Error connecting to Binance:', err);
+      setError('Failed to connect to Binance');
     } finally {
       setLoading(false);
     }
@@ -396,7 +396,7 @@ function App() {
       <div className="container">
         <header className="header">
           <h1>🔗 Mesh Wallet Integration</h1>
-          <p>Connect your Coinbase account or Phantom Wallet to manage your portfolio</p>
+                          <p>Connect your Binance account or Phantom Wallet to manage your portfolio</p>
         </header>
 
         {error && (
@@ -446,10 +446,10 @@ function App() {
                             <div key={connectionId} className="saved-connection-item">
                               <div className="saved-connection-info">
                                 <span className="provider-icon">
-                                  {conn.provider === 'coinbase' ? '🟡' : '👻'}
+                                  {conn.provider === 'binance' ? '🟡' : '👻'}
                                 </span>
                                 <div>
-                                  <strong>{conn.provider === 'coinbase' ? 'Coinbase' : 'Phantom Wallet'}</strong>
+                                  <strong>{conn.provider === 'binance' ? 'Binance' : 'Phantom Wallet'}</strong>
                                   <br />
                                   <small>Saved: {new Date(conn.savedAt).toLocaleDateString()}</small>
                                 </div>
@@ -461,7 +461,7 @@ function App() {
                                     const restoredConnection: MeshConnection = {
                                       id: connectionId,
                                       provider: conn.provider,
-                                      type: conn.provider === 'coinbase' ? 'cex' : 'self_custody',
+                                      type: conn.provider === 'binance' ? 'cex' : 'self_custody',
                                       connected: true,
                                       accounts: []
                                     };
@@ -494,12 +494,12 @@ function App() {
                     )}
                     
                     <div className="connect-buttons">
-                      <button 
-                        className="connect-btn coinbase-btn"
-                        onClick={handleConnectCoinbase}
-                        disabled={loading}
-                      >
-                        {loading ? 'Connecting...' : '🟡 Connect Coinbase'}
+                                              <button 
+                          className="connect-btn binance-btn"
+                          onClick={handleConnectBinance}
+                          disabled={loading}
+                        >
+                          {loading ? 'Connecting...' : '🟡 Connect Binance'}
                       </button>
                       <button 
                         className="connect-btn phantom-btn"
@@ -514,7 +514,7 @@ function App() {
                   <div className="connected-state">
                     <div className="connection-success">
                       <div className="success-icon">✅</div>
-                      <h3>Connected to {connection.provider === 'coinbase' ? 'Coinbase' : 'Phantom Wallet'}</h3>
+                      <h3>Connected to {connection.provider === 'binance' ? 'Binance' : 'Phantom Wallet'}</h3>
                       <p>Connection ID: {connection.id}</p>
                       <p>Type: {connection.type === 'cex' ? 'Centralized Exchange' : 'Self-Custody Wallet'}</p>
                       
@@ -578,7 +578,7 @@ function App() {
                           <p>
                             <strong>💡 Transfer Process:</strong> 
                             {connection.type === 'cex' ? 
-                              ' Mesh will handle the transfer directly from your Coinbase account.' :
+                              ' Mesh will handle the transfer directly from your Binance account.' :
                               ' You\'ll be redirected to your Phantom wallet to approve the transfer.'}
                           </p>
                         </div>

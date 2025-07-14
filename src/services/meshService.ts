@@ -234,6 +234,95 @@ export class MeshService {
     }
   }
 
+  // Open MeshConnect for Binance
+  static async openBinanceConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
+    try {
+      // First check if we have existing valid tokens for Binance
+      const existingTokenCheck = this.hasValidTokensForProvider('binance');
+      
+      if (existingTokenCheck.hasTokens) {
+        console.log('🔄 Found existing Binance tokens, reusing connection:', existingTokenCheck.connectionId);
+        
+        // Verify the tokens are still valid by making a test API call
+        try {
+          await this.storeConnection(existingTokenCheck.connectionId!, existingTokenCheck.connection!.accessToken, { provider: 'binance' });
+          
+          return { 
+            success: true, 
+            connectionId: existingTokenCheck.connectionId!,
+            fromCache: true 
+          } as any;
+        } catch (error) {
+          console.log('⚠️ Existing tokens invalid, clearing and creating new connection');
+          this.clearSavedConnection(existingTokenCheck.connectionId!);
+        }
+      }
+      
+      console.log('🔐 No valid tokens found, initiating new Binance authentication...');
+      const linkToken = await this.getLinkToken();
+      
+      return new Promise((resolve) => {
+        const link = createLink({
+          clientId: MESH_CLIENT_ID,
+          onIntegrationConnected: async (payload) => {
+            console.log('Binance connected successfully:', payload);
+            // Check if accessToken exists and extract connection info
+            if (payload.accessToken) {
+              const accessToken = payload.accessToken as any;
+              const connectionId = accessToken.accountId || accessToken.account_id || accessToken.id || 'connection_' + Date.now();
+              
+              try {
+                // Store the connection data for future API calls
+                await this.storeConnection(connectionId, accessToken, payload);
+                
+                // Save tokens locally for future use
+                this.saveConnectionTokens(connectionId, accessToken, 'binance');
+                
+                resolve({ 
+                  success: true, 
+                  connectionId: connectionId 
+                });
+              } catch (error) {
+                console.error('Error storing connection:', error);
+                resolve({ 
+                  success: false, 
+                  error: 'Failed to store connection data' 
+                });
+              }
+            } else {
+              resolve({ 
+                success: false, 
+                error: 'No access token received' 
+              });
+            }
+          },
+          onTransferFinished: (payload) => {
+            console.log('Transfer finished:', payload);
+          },
+          onExit: (error, summary) => {
+            console.log('Connection closed:', error, summary);
+            resolve({ 
+              success: false, 
+              error: error || 'User closed connection' 
+            });
+          },
+          onEvent: (event) => {
+            console.log('MeshConnect event:', event);
+          }
+        });
+        
+        link.openLink(linkToken);
+      });
+      
+    } catch (error) {
+      console.error('Error opening Binance connection:', error);
+      return { 
+        success: false, 
+        error: 'Failed to open Binance connection' 
+      };
+    }
+  }
+
   // Open MeshConnect for Phantom Wallet
   static async openPhantomConnection(): Promise<{ success: boolean; connectionId?: string; error?: string }> {
     try {
@@ -346,6 +435,17 @@ export class MeshService {
     }
   }
 
+  // Get cryptocurrency balances from Binance
+  static async getBinanceCryptoBalances(): Promise<any> {
+    try {
+      const response = await api.get('/binance-crypto-balances');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting Binance crypto balances:', error);
+      throw new Error('Failed to get Binance crypto balances');
+    }
+  }
+
   // Get cryptocurrency balances from Phantom Wallet
   static async getPhantomCryptoBalances(): Promise<any> {
     try {
@@ -387,6 +487,17 @@ export class MeshService {
     } catch (error) {
       console.error('Error getting Coinbase USDC balance:', error);
       throw new Error('Failed to get Coinbase USDC balance');
+    }
+  }
+
+  // Get USDC balance from Binance
+  static async getBinanceUSDCBalance(): Promise<any> {
+    try {
+      const response = await api.get('/binance-usdc');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting Binance USDC balance:', error);
+      throw new Error('Failed to get Binance USDC balance');
     }
   }
 

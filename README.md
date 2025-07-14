@@ -1,24 +1,24 @@
 # 🔗 Mesh Integration Demo
 
-A cryptocurrency wallet integration demo using Mesh Connect SDK for both Coinbase (CEX) and Phantom Wallet (self-custody).
+A cryptocurrency wallet integration demo using Mesh Connect SDK for both Binance (CEX) and Phantom Wallet (self-custody).
 
 ## 🚀 Features
 
-- **Dual Wallet Support**: Connect both Coinbase and Phantom Wallet
-- **Automated Transfers**: Transfer $1 USDC from connected accounts to app wallet
-- **MFA Support**: Built-in two-factor authentication for Coinbase
+- **Dual Wallet Support**: Connect both Binance and Phantom Wallet
+- **Automated Transfers**: Transfer custom USDC amounts from connected accounts to app wallet
+- **MFA Support**: Built-in two-factor authentication for Binance
 - **Real-time Portfolio**: View crypto balances and holdings
 - **Persistent Sessions**: Save connection tokens for future use
 - **Matrix/Cyberpunk UI**: Modern dark theme with neon accents
 
 ## 💼 Wallet Types Supported
 
-### 🏦 Coinbase (Centralized Exchange)
+### 🟡 Binance (Centralized Exchange)
 - **Type**: CEX (Centralized Exchange)
 - **Transfer Process**: Automated through Mesh APIs
 - **MFA**: Built-in 2FA verification within modal
 - **User Experience**: Complete transfer in one modal
-- **Requirements**: 6-digit MFA codes from Coinbase app
+- **Requirements**: 6-digit MFA codes from Binance app
 
 ### 👻 Phantom Wallet (Self-Custody)
 - **Type**: Self-Custody Wallet
@@ -29,7 +29,7 @@ A cryptocurrency wallet integration demo using Mesh Connect SDK for both Coinbas
 
 ## 📋 Transfer Process Comparison
 
-| Feature | Coinbase (CEX) | Phantom (Self-Custody) |
+| Feature | Binance (CEX) | Phantom (Self-Custody) |
 |---------|----------------|------------------------|
 | **Automation** | Fully automated | User approval required |
 | **MFA/2FA** | Built-in Mesh modal | Handled by wallet |
@@ -82,8 +82,8 @@ const result = await MeshService.executeTransferWithSDK(
 const brokerType = connectionData.accessToken?.brokerType;
 if (brokerType === 'phantom') {
   integrationId = '757e703f-a8fe-4dc4-d0ec-08dc6737ad96'; // Phantom integration ID
-} else if (brokerType === 'coinbase') {
-  integrationId = '47624467-e52e-4938-a41a-7926b6c27acf'; // Coinbase integration ID
+} else if (brokerType === 'binance' || brokerType === 'binanceInternational') {
+  integrationId = 'BINANCE_INTEGRATION_ID_PLACEHOLDER'; // Binance integration ID
 }
 ```
 
@@ -95,7 +95,7 @@ if (brokerType === 'phantom') {
 5. **Transaction submitted to Solana network**
 6. **Confirmation returned to app**
 
-### Transfer Flow for Coinbase
+### Transfer Flow for Binance
 1. **User clicks transfer button**
 2. **Mesh SDK opens modal**
 3. **User enters MFA code in modal**
@@ -105,7 +105,7 @@ if (brokerType === 'phantom') {
 
 ## 🔐 Security Features
 
-### Coinbase Security
+### Binance Security
 - **MFA Validation**: Real-time validation of 6-digit codes
 - **Token Encryption**: Secure token storage and transmission
 - **Session Management**: Automatic token refresh

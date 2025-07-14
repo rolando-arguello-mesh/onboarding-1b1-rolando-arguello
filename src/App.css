@@ -215,17 +215,17 @@ body {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
-.coinbase-btn {
-  background: linear-gradient(45deg, #00C853, #00B140);
+.binance-btn {
+  background: linear-gradient(45deg, #F0B90B, #FCD535);
   color: #000000;
-  border: 1px solid #00FF41;
-  box-shadow: 0 0 10px rgba(0, 200, 83, 0.3);
+  border: 1px solid #F0B90B;
+  box-shadow: 0 0 10px rgba(240, 185, 11, 0.3);
 }
 
-.coinbase-btn:hover {
-  background: linear-gradient(45deg, #7CFC00, #00FF41);
+.binance-btn:hover {
+  background: linear-gradient(45deg, #FCD535, #FFE066);
   color: #000000;
-  box-shadow: 0 0 15px rgba(124, 252, 0, 0.5);
+  box-shadow: 0 0 15px rgba(252, 213, 53, 0.5);
 }
 
 .phantom-btn {

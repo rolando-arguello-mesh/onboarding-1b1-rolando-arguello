@@ -260,19 +260,19 @@ app.get('/api/mesh/integrations', async (req, res) => {
   }
 });
 
-// Get MeshConnect link token for Coinbase (goes directly to Coinbase)
+// Get MeshConnect link token for Binance (goes directly to Binance)
 app.get('/api/mesh/link-token', async (req, res) => {
   try {
     const response = await meshAPI.post('/api/v1/linktoken', {
-      userId: 'user_coinbase_' + Date.now(),
-      integrationId: '47624467-e52e-4938-a41a-7926b6c27acf', // Coinbase integration ID from official docs
+      userId: 'user_binance_' + Date.now(),
+      integrationId: 'BINANCE_INTEGRATION_ID_PLACEHOLDER', // TODO: Replace with actual Binance integration ID
       restrictMultipleAccounts: true
     });
     
-    console.log('✅ Coinbase link token generated successfully');
+    console.log('✅ Binance link token generated successfully');
     res.json({ linkToken: response.data.content.linkToken });
   } catch (error) {
-    console.error('❌ Error generating Coinbase link token:', error.response?.data || error.message);
+    console.error('❌ Error generating Binance link token:', error.response?.data || error.message);
     res.status(500).json({ error: 'Failed to generate link token' });
   }
 });
@@ -689,8 +689,8 @@ app.post('/api/mesh/link-token', async (req, res) => {
     // Get the correct integration ID based on broker type
     const brokerName = connectionData.accessToken?.brokerName;
     let integrationId;
-    if (brokerType === 'coinbase') {
-      integrationId = '47624467-e52e-4938-a41a-7926b6c27acf'; // Coinbase integration ID
+    if (brokerType === 'binance' || brokerType === 'binanceInternational') {
+      integrationId = 'BINANCE_INTEGRATION_ID_PLACEHOLDER'; // TODO: Replace with actual Binance integration ID
     } else if (brokerType === 'phantom' || brokerType === 'deFiWallet' || brokerName === 'Phantom') {
       integrationId = '757e703f-a8fe-4dc4-d0ec-08dc6737ad96'; // Phantom integration ID
     } else {
@@ -1809,51 +1809,51 @@ app.post('/api/mesh/usdc-balance', async (req, res) => {
   }
 });
 
-// Get USDC balance from the most recent Coinbase connection
-app.get('/api/mesh/coinbase-usdc', async (req, res) => {
+// Get USDC balance from the most recent Binance connection
+app.get('/api/mesh/binance-usdc', async (req, res) => {
   try {
-    console.log('💰 COINBASE USDC REQUEST - Looking for Coinbase connections...');
+    console.log('💰 BINANCE USDC REQUEST - Looking for Binance connections...');
     
-    // Find the most recent Coinbase connection
-    let coinbaseConnection = null;
+    // Find the most recent Binance connection
+    let binanceConnection = null;
     let mostRecentTime = 0;
     
     for (const [connectionId, connectionData] of connectedAccounts.entries()) {
       const brokerType = connectionData.accessToken?.brokerType;
       const brokerName = connectionData.accessToken?.brokerName;
-      const isCoinbase = brokerType === 'coinbase' || brokerName?.toLowerCase().includes('coinbase');
+      const isBinance = brokerType === 'binance' || brokerType === 'binanceInternational' || brokerName?.toLowerCase().includes('binance');
       
-      if (isCoinbase) {
+      if (isBinance) {
         const connectedTime = new Date(connectionData.connectedAt).getTime();
         if (connectedTime > mostRecentTime) {
           mostRecentTime = connectedTime;
-          coinbaseConnection = { connectionId, ...connectionData };
+          binanceConnection = { connectionId, ...connectionData };
         }
       }
     }
     
-    if (!coinbaseConnection) {
-      console.log('⚠️ No Coinbase connections found');
-      return res.status(404).json({ error: 'No Coinbase connection found. Please connect your Coinbase account first.' });
+    if (!binanceConnection) {
+      console.log('⚠️ No Binance connections found');
+      return res.status(404).json({ error: 'No Binance connection found. Please connect your Binance account first.' });
     }
     
-    console.log('💰 COINBASE USDC - Using connection:', coinbaseConnection.connectionId);
+    console.log('💰 BINANCE USDC - Using connection:', binanceConnection.connectionId);
     
     // Get USDC balance using the found connection
-    const realAccessToken = coinbaseConnection.accessToken?.accountTokens?.[0]?.accessToken;
+    const realAccessToken = binanceConnection.accessToken?.accountTokens?.[0]?.accessToken;
     
     if (!realAccessToken) {
-      console.log('⚠️ No access token found for Coinbase connection');
-      return res.status(400).json({ error: 'No access token found for Coinbase connection' });
+      console.log('⚠️ No access token found for Binance connection');
+      return res.status(400).json({ error: 'No access token found for Binance connection' });
     }
     
     try {
-      console.log('💰 GETTING COINBASE USDC BALANCE...');
+      console.log('💰 GETTING BINANCE USDC BALANCE...');
       
       // Make the API call to Mesh Connect
       const response = await meshAPI.post('/api/v1/holdings/get', {
         authToken: realAccessToken,
-        type: 'coinbase',
+        type: 'binanceInternational',
         includeMarketValue: true
       });
       
@@ -2079,13 +2079,13 @@ app.post('/api/mesh/crypto-balances', async (req, res) => {
   }
 });
 
-// Get all cryptocurrency balances from Coinbase
-app.get('/api/mesh/coinbase-crypto-balances', async (req, res) => {
+// Get all cryptocurrency balances from Binance
+app.get('/api/mesh/binance-crypto-balances', async (req, res) => {
   try {
-    console.log('🪙 COINBASE CRYPTO BALANCES REQUEST - Looking for Coinbase connections...');
+    console.log('🪙 BINANCE CRYPTO BALANCES REQUEST - Looking for Binance connections...');
     
-    // Find the most recent Coinbase connection
-    let coinbaseConnection = null;
+    // Find the most recent Binance connection
+    let binanceConnection = null;
     let mostRecentTime = 0;
     
     for (const [connectionId, connectionData] of connectedAccounts.entries()) {
