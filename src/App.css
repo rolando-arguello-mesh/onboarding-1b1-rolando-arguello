@@ -1789,472 +1789,6 @@ body {
   }
 }
 
-.reload-balances-btn {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-  color: white;
-  border: 2px solid #4CAF50;
-  padding: 10px 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-}
-
-.reload-balances-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
-  border-color: #45a049;
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-  transform: translateY(-2px);
-}
-
-.reload-balances-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.usdc-balance-section {
-  background: #1A1A1A;
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 25px;
-  border: 1px solid #00B140;
-  text-align: center;
-  box-shadow: 0 0 15px rgba(0, 177, 64, 0.2);
-}
-
-.usdc-balance-section h3 {
-  color: #00FF41;
-  margin-bottom: 15px;
-  font-size: 1.4em;
-}
-
-.usdc-summary {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.usdc-amount {
-  font-size: 1.8em;
-  font-weight: 800;
-  color: #00FF41;
-  text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-  letter-spacing: 0.8px;
-}
-
-.usdc-value {
-  font-size: 1.2em;
-  color: #00C853;
-}
-
-/* Crypto Balances Section */
-.crypto-balances-section {
-  background: linear-gradient(135deg, #2d1b69 0%, #1a1a2e 100%);
-  border: 1px solid #553c9a;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 32px rgba(139, 69, 255, 0.1);
-}
-
-.crypto-balances-section h2 {
-  color: #8b45ff;
-  margin-bottom: 20px;
-  font-size: 1.4em;
-  text-shadow: 0 0 10px rgba(139, 69, 255, 0.5);
-}
-
-.wallet-info {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  margin-bottom: 20px;
-  padding: 15px;
-  background: rgba(139, 69, 255, 0.1);
-  border-radius: 8px;
-  border: 1px solid rgba(139, 69, 255, 0.2);
-}
-
-.wallet-provider, .wallet-type, .wallet-network, .wallet-connection {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.provider-label, .type-label, .network-label, .connection-label {
-  color: #a0a0a0;
-  font-size: 0.9em;
-}
-
-.provider-name, .type-name, .network-name, .connection-id {
-  color: #8b45ff;
-  font-weight: bold;
-}
-
-.crypto-summary {
-  text-align: center;
-  margin-bottom: 25px;
-}
-
-.total-value h3 {
-  color: #00FF41;
-  margin-bottom: 15px;
-  font-size: 1.4em;
-}
-
-.value-display {
-  font-size: 2.5em;
-  font-weight: 900;
-  color: #00FF41;
-  text-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
-  margin-bottom: 10px;
-  letter-spacing: 1px;
-}
-
-.positions-count {
-  color: #00C853;
-  font-size: 1.1em;
-}
-
-.crypto-positions h3 {
-  color: #00FF41;
-  margin-bottom: 20px;
-  font-size: 1.3em;
-  text-align: left;
-}
-
-.positions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.position-card {
-  background: rgba(26, 26, 26, 0.8);
-  border: 1px solid #00B140;
-  border-radius: 15px;
-  padding: 20px;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 10px rgba(0, 177, 64, 0.2);
-}
-
-.position-card:hover {
-  background: rgba(26, 26, 26, 1);
-  transform: translateY(-2px);
-  box-shadow: 0 0 15px rgba(0, 177, 64, 0.4);
-}
-
-.position-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  flex-wrap: wrap;
-}
-
-.position-network {
-  color: #8b45ff;
-  font-size: 0.8em;
-  background: rgba(139, 69, 255, 0.2);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid rgba(139, 69, 255, 0.3);
-}
-
-.position-header h4 {
-  color: #00FF41;
-  margin: 0;
-  font-size: 1.2em;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.position-name {
-  color: #00C853;
-  font-size: 0.9em;
-}
-
-.position-details {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.position-details > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.position-details .label {
-  color: #00B140;
-  font-size: 0.9em;
-}
-
-.position-details .value {
-  color: #00FF41;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-.position-pnl.positive .value {
-  color: #00C853;
-}
-
-.position-pnl.negative .value {
-  color: #7B1FA2;
-}
-
-.balance-timestamp {
-  text-align: center;
-  margin-top: 20px;
-  color: #00B140;
-}
-
-/* Balance Placeholder Styles */
-.balance-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-  padding: 20px;
-  text-align: center;
-}
-
-.balance-placeholder p {
-  color: #00C853;
-  margin: 0;
-  font-style: italic;
-}
-
-.balance-value {
-  font-size: 2em;
-  font-weight: 900;
-  color: #00FF41;
-  text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
-  letter-spacing: 1px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .dashboard-layout {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .position-details {
-    grid-template-columns: 1fr;
-  }
-  
-  .connect-buttons {
-    width: 100%;
-  }
-  
-  .connect-btn {
-    min-width: 100%;
-  }
-  
-  .saved-connection-item {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-  
-  .saved-connection-actions {
-    justify-content: center;
-  }
-  
-  .connection-actions {
-    flex-direction: row;
-    justify-content: center;
-  }
-
-  .wallet-info {
-    grid-template-columns: 1fr;
-  }
-  
-  .app-wallet-tokens {
-    grid-template-columns: 1fr;
-  }
-  
-  .position-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-  }
-}
-
-@media (max-width: 480px) {
-  .App {
-    padding: 10px;
-  }
-  
-  .header h1 {
-    font-size: 2em;
-  }
-  
-  .value-display {
-    font-size: 2em;
-  }
-  
-  .wallet-address {
-    font-size: 0.8em;
-  }
-}
-
-/* MFA Section Styles */
-.mfa-section {
-  background: #1A1A1A;
-  border: 1px solid #00FF41;
-  border-radius: 15px;
-  padding: 25px;
-  margin-top: 20px;
-  box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
-}
-
-.mfa-prompt {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.mfa-prompt h4 {
-  color: #00FF41;
-  font-size: 1.4em;
-  font-weight: 700;
-  margin-bottom: 10px;
-  letter-spacing: 0.8px;
-}
-
-.mfa-prompt p {
-  color: #00C853;
-  font-size: 1em;
-  margin: 0;
-  letter-spacing: 0.5px;
-}
-
-.mfa-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  align-items: center;
-}
-
-.mfa-input {
-  background: #000000;
-  border: 1px solid #00FF41;
-  border-radius: 10px;
-  padding: 15px;
-  font-family: 'Courier New', monospace;
-  font-size: 1.2em;
-  color: #00FF41;
-  text-align: center;
-  letter-spacing: 3px;
-  width: 200px;
-  transition: all 0.3s ease;
-  box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
-}
-
-.mfa-input:focus {
-  outline: none;
-  border-color: #7CFC00;
-  box-shadow: 0 0 20px rgba(124, 252, 0, 0.4);
-}
-
-.mfa-input::placeholder {
-  color: #00C853;
-  opacity: 0.7;
-  letter-spacing: 1px;
-}
-
-.mfa-buttons {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.mfa-submit-btn {
-  background: linear-gradient(45deg, #00FF41, #7CFC00);
-  border: none;
-  border-radius: 10px;
-  padding: 12px 25px;
-  font-size: 1em;
-  font-weight: 700;
-  color: #000000;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 0.5px;
-  box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
-}
-
-.mfa-submit-btn:hover:not(:disabled) {
-  background: linear-gradient(45deg, #7CFC00, #00FF41);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 25px rgba(124, 252, 0, 0.4);
-}
-
-.mfa-submit-btn:disabled {
-  background: #1A1A1A;
-  color: #00C853;
-  cursor: not-allowed;
-  opacity: 0.5;
-  transform: none;
-  box-shadow: none;
-}
-
-.mfa-cancel-btn {
-  background: linear-gradient(45deg, #7B1FA2, #9C27B0);
-  border: none;
-  border-radius: 10px;
-  padding: 12px 25px;
-  font-size: 1em;
-  font-weight: 700;
-  color: #00FF41;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 0.5px;
-  box-shadow: 0 0 15px rgba(123, 31, 162, 0.3);
-}
-
-.mfa-cancel-btn:hover:not(:disabled) {
-  background: linear-gradient(45deg, #9C27B0, #7B1FA2);
-  transform: translateY(-2px);
-  box-shadow: 0 5px 25px rgba(156, 39, 176, 0.4);
-}
-
-.mfa-cancel-btn:disabled {
-  background: #1A1A1A;
-  color: #00C853;
-  cursor: not-allowed;
-  opacity: 0.5;
-  transform: none;
-  box-shadow: none;
-}
-
-/* MFA Responsive Design */
-@media (max-width: 480px) {
-  .mfa-input {
-    width: 100%;
-    max-width: 250px;
-  }
-  
-  .mfa-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .mfa-submit-btn,
-  .mfa-cancel-btn {
-    width: 100%;
-    max-width: 200px;
-  }
-}
-
 .wallet-info {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2526,6 +2060,241 @@ body {
   .balance-value {
     font-size: 1em;
   }
+}
+
+/* ===== BINANCE SPECIFIC STYLING ===== */
+
+/* Loading state styling */
+.loading-value {
+  color: #f0b90b;
+  animation: pulse 1.5s infinite;
+  font-weight: 500;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Binance-specific styling */
+.crypto-balances-section.binance-style {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d1b00 50%, #1a1a1a 100%);
+  border: 2px solid #f0b90b;
+  box-shadow: 
+    0 0 20px rgba(240, 185, 11, 0.2),
+    inset 0 1px 0 rgba(240, 185, 11, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.crypto-balances-section.binance-style::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f0b90b, #fcd535, #f0b90b);
+  z-index: 1;
+}
+
+.crypto-balances-section.binance-style h2 {
+  color: #f0b90b;
+  text-shadow: 0 0 15px rgba(240, 185, 11, 0.6);
+  font-weight: 700;
+  font-size: 1.5em;
+  margin-bottom: 20px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.crypto-balances-section.binance-style .wallet-info {
+  background: linear-gradient(135deg, rgba(240, 185, 11, 0.08) 0%, rgba(252, 213, 53, 0.05) 100%);
+  border: 1px solid rgba(240, 185, 11, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(5px);
+}
+
+.crypto-balances-section.binance-style .provider-label,
+.crypto-balances-section.binance-style .type-label,
+.crypto-balances-section.binance-style .network-label,
+.crypto-balances-section.binance-style .connection-label {
+  color: #f0b90b;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(240, 185, 11, 0.4);
+}
+
+.crypto-balances-section.binance-style .provider-name,
+.crypto-balances-section.binance-style .type-name,
+.crypto-balances-section.binance-style .network-name,
+.crypto-balances-section.binance-style .connection-id {
+  color: #fcd535;
+  font-weight: 500;
+}
+
+.crypto-balances-section.binance-style .crypto-summary {
+  background: linear-gradient(135deg, rgba(240, 185, 11, 0.1) 0%, rgba(252, 213, 53, 0.08) 100%);
+  border: 1px solid rgba(240, 185, 11, 0.2);
+  border-radius: 15px;
+}
+
+.crypto-balances-section.binance-style .crypto-summary h3 {
+  color: #f0b90b;
+  text-shadow: 0 0 10px rgba(240, 185, 11, 0.5);
+}
+
+.crypto-balances-section.binance-style .value-display {
+  color: #f0b90b;
+  text-shadow: 0 0 15px rgba(240, 185, 11, 0.4);
+  font-weight: 700;
+  font-size: 1.8em;
+}
+
+.crypto-balances-section.binance-style .positions-count {
+  color: #fcd535;
+  font-weight: 500;
+}
+
+.crypto-balances-section.binance-style .crypto-positions h3 {
+  color: #f0b90b;
+  text-shadow: 0 0 10px rgba(240, 185, 11, 0.5);
+  border-bottom: 2px solid rgba(240, 185, 11, 0.3);
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+}
+
+.crypto-balances-section.binance-style .position-card {
+  background: linear-gradient(135deg, rgba(240, 185, 11, 0.05) 0%, rgba(26, 26, 26, 0.9) 100%);
+  border: 1px solid rgba(240, 185, 11, 0.2);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.crypto-balances-section.binance-style .position-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #f0b90b, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.crypto-balances-section.binance-style .position-card:hover::before {
+  opacity: 1;
+}
+
+.crypto-balances-section.binance-style .position-card:hover {
+  background: linear-gradient(135deg, rgba(240, 185, 11, 0.12) 0%, rgba(45, 27, 0, 0.8) 100%);
+  border-color: rgba(240, 185, 11, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 20px rgba(240, 185, 11, 0.15);
+}
+
+.crypto-balances-section.binance-style .position-header h4 {
+  color: #f0b90b;
+  text-shadow: 0 0 8px rgba(240, 185, 11, 0.4);
+  font-weight: 600;
+}
+
+.crypto-balances-section.binance-style .position-name {
+  color: #fcd535;
+}
+
+.crypto-balances-section.binance-style .position-network {
+  color: rgba(240, 185, 11, 0.7);
+}
+
+.crypto-balances-section.binance-style .label {
+  color: rgba(240, 185, 11, 0.8);
+}
+
+.crypto-balances-section.binance-style .value {
+  color: #fcd535;
+  font-weight: 500;
+}
+
+.crypto-balances-section.binance-style .position-pnl.positive {
+  color: #00d4aa;
+  text-shadow: 0 0 5px rgba(0, 212, 170, 0.3);
+}
+
+.crypto-balances-section.binance-style .position-pnl.negative {
+  color: #ff6b6b;
+  text-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
+}
+
+.crypto-balances-section.binance-style .balance-timestamp {
+  color: rgba(240, 185, 11, 0.6);
+  text-align: center;
+  font-style: italic;
+}
+
+.crypto-balances-section.binance-style .no-balances {
+  background: linear-gradient(135deg, rgba(240, 185, 11, 0.05) 0%, rgba(26, 26, 26, 0.8) 100%);
+  border: 1px solid rgba(240, 185, 11, 0.2);
+  border-radius: 10px;
+}
+
+.crypto-balances-section.binance-style .no-balances h3 {
+  color: #f0b90b;
+  text-shadow: 0 0 10px rgba(240, 185, 11, 0.5);
+}
+
+.crypto-balances-section.binance-style .no-balances p {
+  color: #fcd535;
+}
+
+.crypto-balances-section.binance-style .reload-balances-btn {
+  background: linear-gradient(135deg, #f0b90b 0%, #fcd535 100%);
+  border: 1px solid #f0b90b;
+  color: #000;
+  font-weight: 600;
+}
+
+.crypto-balances-section.binance-style .reload-balances-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fcd535 0%, #f0b90b 100%);
+  box-shadow: 0 0 15px rgba(240, 185, 11, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Phantom-specific styling to differentiate */
+.crypto-balances-section.phantom-style {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #9945ff;
+  box-shadow: 0 0 20px rgba(153, 69, 255, 0.2);
+}
+
+.crypto-balances-section.phantom-style h2 {
+  color: #9945ff;
+  text-shadow: 0 0 15px rgba(153, 69, 255, 0.6);
+}
+
+.crypto-balances-section.phantom-style .provider-label,
+.crypto-balances-section.phantom-style .type-label,
+.crypto-balances-section.phantom-style .network-label,
+.crypto-balances-section.phantom-style .connection-label {
+  color: #9945ff;
+}
+
+.crypto-balances-section.phantom-style .crypto-summary h3,
+.crypto-balances-section.phantom-style .crypto-positions h3 {
+  color: #9945ff;
+  text-shadow: 0 0 10px rgba(153, 69, 255, 0.5);
+}
+
+.crypto-balances-section.phantom-style .value-display {
+  color: #9945ff;
+  text-shadow: 0 0 10px rgba(153, 69, 255, 0.4);
+}
+
+.crypto-balances-section.phantom-style .position-header h4 {
+  color: #9945ff;
 }
 
 

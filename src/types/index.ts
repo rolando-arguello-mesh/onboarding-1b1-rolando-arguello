@@ -79,6 +79,11 @@ export interface CryptoBalanceData {
     optionCount: number;
   };
   timestamp: string;
+  error?: {
+    message: string;
+    details: string;
+    canRetry: boolean;
+  };
 }
 
 export interface USDCBalanceData {

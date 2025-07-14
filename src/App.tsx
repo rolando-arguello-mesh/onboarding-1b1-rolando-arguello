@@ -116,7 +116,34 @@ function App() {
       console.log('✅ Crypto balances loaded successfully for', currentConnection.provider);
     } catch (err: any) {
       console.error('❌ Failed to load crypto balances:', err);
-      // Don't set error, just log it since this might be normal for some connections
+      
+      // Handle Binance integration not available error
+      if (err.response?.status === 503 && err.response?.data?.fallback && currentConnection.provider === 'binance') {
+        setCryptoBalances({
+          success: false,
+          brokerName: 'Binance',
+          brokerType: 'Exchange',
+          connectionId: currentConnection.id,
+          summary: {
+            totalCryptoValue: 0,
+            formattedTotalValue: 'Service Unavailable',
+            totalPositions: 0
+          },
+          cryptocurrencyPositions: [],
+          otherPositions: {
+            equityCount: 0,
+            nftCount: 0,
+            optionCount: 0
+          },
+          timestamp: new Date().toISOString(),
+          error: {
+            message: 'Binance integration temporarily unavailable',
+            details: 'Please try connecting to Binance first or try again later.',
+            canRetry: true
+          }
+        });
+      }
+      // Don't set error for other cases, just log it since this might be normal for some connections
     }
   };
 
@@ -683,20 +710,31 @@ function App() {
           <div className="right-column">
             {/* Crypto Balances Display */}
             {cryptoBalances && (
-              <div className="crypto-balances-section">
-                <h2>👻 Phantom Wallet - All Token Balances</h2>
+              <div className={`crypto-balances-section ${connection?.provider === 'binance' ? 'binance-style' : 'phantom-style'}`}>
+                <h2>
+                  {connection?.provider === 'binance' 
+                    ? '💰 Binance Exchange - Crypto Portfolio' 
+                    : '👻 Phantom Wallet - All Token Balances'
+                  }
+                </h2>
                 <div className="wallet-info">
                   <div className="wallet-provider">
-                    <span className="provider-label">Provider:</span>
-                    <span className="provider-name">{cryptoBalances.brokerName || 'Phantom'}</span>
+                    <span className="provider-label">Exchange:</span>
+                    <span className="provider-name">
+                      {connection?.provider === 'binance' ? 'Binance International' : (cryptoBalances.brokerName || 'Phantom')}
+                    </span>
                   </div>
                   <div className="wallet-type">
-                    <span className="type-label">Type:</span>
-                    <span className="type-name">{cryptoBalances.brokerType || 'DeFi Wallet'}</span>
+                    <span className="type-label">Account Type:</span>
+                    <span className="type-name">
+                      {connection?.provider === 'binance' ? 'Centralized Exchange' : (cryptoBalances.brokerType || 'DeFi Wallet')}
+                    </span>
                   </div>
                   <div className="wallet-network">
-                    <span className="network-label">Network:</span>
-                    <span className="network-name">Solana</span>
+                    <span className="network-label">Networks:</span>
+                    <span className="network-name">
+                      {connection?.provider === 'binance' ? 'Multi-Chain Support' : 'Solana'}
+                    </span>
                   </div>
                   <div className="wallet-connection">
                     <span className="connection-label">Connection ID:</span>
@@ -706,19 +744,32 @@ function App() {
                 
                 <div className="crypto-summary">
                   <div className="total-value">
-                    <h3>Total Portfolio Value</h3>
+                    <h3>
+                      {connection?.provider === 'binance' 
+                        ? '💼 Total Portfolio Value' 
+                        : 'Total Portfolio Value'
+                      }
+                    </h3>
                     <div className="value-display">
                       {cryptoBalances.summary.formattedTotalValue}
                     </div>
                     <div className="positions-count">
-                      {cryptoBalances.summary.totalPositions} tokens with balance
+                      {connection?.provider === 'binance' 
+                        ? `${cryptoBalances.summary.totalPositions} assets in portfolio`
+                        : `${cryptoBalances.summary.totalPositions} tokens with balance`
+                      }
                     </div>
                   </div>
                 </div>
                 
                 {cryptoBalances.cryptocurrencyPositions && cryptoBalances.cryptocurrencyPositions.length > 0 ? (
                   <div className="crypto-positions">
-                    <h3>Your Token Holdings</h3>
+                    <h3>
+                      {connection?.provider === 'binance' 
+                        ? '🪙 Your Crypto Assets' 
+                        : 'Your Token Holdings'
+                      }
+                    </h3>
                     <div className="positions-list">
                       {cryptoBalances.cryptocurrencyPositions.map((position: any, index: number) => (
                         <div key={`${position.symbol}-${index}`} className="position-card">
@@ -751,15 +802,38 @@ function App() {
                   </div>
                 ) : (
                   <div className="no-balances">
-                    <h3>No Token Balances Found</h3>
-                    <p>Your Phantom wallet doesn't have any tokens with value, or the connection needs to be refreshed.</p>
-                    <button 
-                      className="reload-balances-btn"
-                      onClick={reloadAllBalances}
-                      disabled={loading}
-                    >
-                      {loading ? '🔄 Loading...' : '🔄 Refresh Balances'}
-                    </button>
+                    {cryptoBalances.error ? (
+                      <>
+                        <h3>⚠️ {cryptoBalances.error.message}</h3>
+                        <p>{cryptoBalances.error.details}</p>
+                        {cryptoBalances.error.canRetry && (
+                          <button 
+                            className="reload-balances-btn"
+                            onClick={reloadAllBalances}
+                            disabled={loading}
+                          >
+                            {loading ? '🔄 Retrying...' : '🔄 Try Again'}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <h3>No Token Balances Found</h3>
+                        <p>
+                          {connection?.provider === 'binance' 
+                            ? 'Your Binance account doesn\'t have any crypto positions with value, or the connection needs to be refreshed.'
+                            : 'Your Phantom wallet doesn\'t have any tokens with value, or the connection needs to be refreshed.'
+                          }
+                        </p>
+                        <button 
+                          className="reload-balances-btn"
+                          onClick={reloadAllBalances}
+                          disabled={loading}
+                        >
+                          {loading ? '🔄 Loading...' : '🔄 Refresh Balances'}
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
                 

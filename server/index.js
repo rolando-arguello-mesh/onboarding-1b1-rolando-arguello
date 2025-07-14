@@ -2098,7 +2098,7 @@ app.get('/api/mesh/binance-usdc', async (req, res) => {
       // Make the API call to Mesh Connect
       const response = await meshAPI.post('/api/v1/holdings/get', {
         authToken: realAccessToken,
-        type: 'binanceInternational',
+        type: 'binanceInternationalDirect',
         includeMarketValue: true
       });
       
@@ -2146,13 +2146,13 @@ app.get('/api/mesh/binance-usdc', async (req, res) => {
         });
       });
       
-      console.log('💰 COINBASE USDC BALANCE:', totalUSDC);
-      console.log('💰 COINBASE USDC VALUE: $', totalUSDC.toFixed(2));
+      console.log('💰 BINANCE USDC BALANCE:', totalUSDC);
+      console.log('💰 BINANCE USDC VALUE: $', totalUSDC.toFixed(2));
       
       res.json({
         success: true,
-        connectionId: coinbaseConnection.connectionId,
-        brokerType: 'coinbase',
+        connectionId: binanceConnection.connectionId,
+        brokerType: 'binance',
         usdc: {
           totalBalance: totalUSDC,
           totalValue: totalUSDC,
@@ -2164,17 +2164,28 @@ app.get('/api/mesh/binance-usdc', async (req, res) => {
         timestamp: new Date().toISOString()
       });
       
-    } catch (apiError) {
-      console.error('❌ COINBASE USDC API ERROR:', apiError.message);
-      res.status(500).json({
-        error: 'Failed to get USDC balance from Coinbase',
-        message: apiError.message
-      });
+        } catch (apiError) {
+      console.error('❌ BINANCE USDC API ERROR:', apiError.message);
+      
+      // Handle specific Binance integration not available error
+      if (apiError.response?.data?.errorType === 'integrationNotAvailable') {
+        res.status(503).json({
+          error: 'Binance integration temporarily unavailable',
+          message: 'The Binance integration is not currently available. Please try connecting to Binance first or try again later.',
+          details: apiError.response?.data || null,
+          fallback: true
+        });
+      } else {
+        res.status(500).json({
+          error: 'Failed to get USDC balance from Binance',
+          message: apiError.message
+        });
+      }
     }
     
   } catch (error) {
-    console.error('❌ COINBASE USDC ERROR:', error);
-    res.status(500).json({ error: 'Failed to get Coinbase USDC balance' });
+          console.error('❌ BINANCE USDC ERROR:', error);
+          res.status(500).json({ error: 'Failed to get Binance USDC balance' });
   }
 });
 
@@ -2332,7 +2343,7 @@ app.post('/api/mesh/crypto-balances', async (req, res) => {
 // Get all cryptocurrency balances from Binance
 app.get('/api/mesh/binance-crypto-balances', async (req, res) => {
   try {
-    console.log('🪙 BINANCE CRYPTO BALANCES REQUEST - Looking for Binance connections...');
+    console.log('💰 BINANCE CRYPTO BALANCES REQUEST - Looking for Binance connections...');
     
     // Find the most recent Binance connection
     let binanceConnection = null;
@@ -2341,50 +2352,50 @@ app.get('/api/mesh/binance-crypto-balances', async (req, res) => {
     for (const [connectionId, connectionData] of connectedAccounts.entries()) {
       const brokerType = connectionData.accessToken?.brokerType;
       const brokerName = connectionData.accessToken?.brokerName;
-      const isCoinbase = brokerType === 'coinbase' || brokerName?.toLowerCase().includes('coinbase');
+      const isBinance = brokerType === 'binance' || brokerType === 'binanceInternational' || brokerName?.toLowerCase().includes('binance');
       
-      if (isCoinbase) {
+      if (isBinance) {
         const connectedTime = new Date(connectionData.connectedAt).getTime();
         if (connectedTime > mostRecentTime) {
           mostRecentTime = connectedTime;
-          coinbaseConnection = { connectionId, ...connectionData };
+          binanceConnection = { connectionId, ...connectionData };
         }
       }
     }
     
-    if (!coinbaseConnection) {
-      console.log('⚠️ No Coinbase connections found');
-      return res.status(404).json({ error: 'No Coinbase connection found. Please connect your Coinbase account first.' });
+    if (!binanceConnection) {
+      console.log('⚠️ No Binance connections found');
+      return res.status(404).json({ error: 'No Binance connection found. Please connect your Binance account first.' });
     }
     
-    console.log('🪙 COINBASE CRYPTO BALANCES - Using connection:', coinbaseConnection.connectionId);
+    console.log('💰 BINANCE CRYPTO BALANCES - Using connection:', binanceConnection.connectionId);
     
     // Get crypto balances using the found connection
-    const realAccessToken = coinbaseConnection.accessToken?.accountTokens?.[0]?.accessToken;
+    const realAccessToken = binanceConnection.accessToken?.accountTokens?.[0]?.accessToken;
     
     if (!realAccessToken) {
-      console.log('⚠️ No access token found for Coinbase connection');
-      return res.status(400).json({ error: 'No access token found for Coinbase connection' });
+      console.log('⚠️ No access token found for Binance connection');
+      return res.status(400).json({ error: 'No access token found for Binance connection' });
     }
     
     try {
-      console.log('🪙 GETTING ALL COINBASE CRYPTO BALANCES...');
+      console.log('💰 GETTING ALL BINANCE CRYPTO BALANCES...');
       
       // Make the API call to Mesh Connect
       const response = await meshAPI.post('/api/v1/holdings/get', {
         authToken: realAccessToken,
-        type: 'coinbase',
+        type: 'binanceInternationalDirect',
         includeMarketValue: true
       });
       
-      console.log('🪙 MESH API RESPONSE STATUS:', response.status);
+      console.log('💰 MESH API RESPONSE STATUS:', response.status);
       
       // Extract cryptocurrency positions from the response
       const content = response.data.content || {};
       const cryptoPositions = content.cryptocurrencyPositions || [];
       
-      console.log('🪙 TOTAL CRYPTOCURRENCY POSITIONS FOUND:', cryptoPositions.length);
-      console.log('🪙 CRYPTOCURRENCYPOSITIONS CONTENT:');
+      console.log('💰 TOTAL CRYPTOCURRENCY POSITIONS FOUND:', cryptoPositions.length);
+      console.log('💰 CRYPTOCURRENCYPOSITIONS CONTENT:');
       
       // Process all cryptocurrency positions
       let totalCryptoValue = 0;
@@ -2452,8 +2463,8 @@ app.get('/api/mesh/binance-crypto-balances', async (req, res) => {
       
       res.json({
         success: true,
-        connectionId: coinbaseConnection.connectionId,
-        brokerType: 'coinbase',
+        connectionId: binanceConnection.connectionId,
+        brokerType: 'binance',
         summary: {
           totalCryptoValue: totalCryptoValue,
           totalPositions: cryptoBalances.length,
@@ -2468,20 +2479,30 @@ app.get('/api/mesh/binance-crypto-balances', async (req, res) => {
         timestamp: new Date().toISOString()
       });
       
-    } catch (apiError) {
-      console.error('❌ COINBASE CRYPTO BALANCES API ERROR:', apiError.message);
-      console.error('❌ COINBASE CRYPTO BALANCES API DETAILS:', apiError.response?.data || apiError);
+        } catch (apiError) {
+      console.error('❌ BINANCE CRYPTO BALANCES API ERROR:', apiError.message);
+      console.error('❌ BINANCE CRYPTO BALANCES API DETAILS:', apiError.response?.data || apiError);
       
-      res.status(500).json({
-        error: 'Failed to get cryptocurrency balances from Coinbase',
-        message: apiError.message,
-        details: apiError.response?.data || null
-      });
+      // Handle specific Binance integration not available error
+      if (apiError.response?.data?.errorType === 'integrationNotAvailable') {
+        res.status(503).json({
+          error: 'Binance integration temporarily unavailable',
+          message: 'The Binance integration is not currently available. Please try connecting to Binance first or try again later.',
+          details: apiError.response?.data || null,
+          fallback: true
+        });
+      } else {
+        res.status(500).json({
+          error: 'Failed to get cryptocurrency balances from Binance',
+          message: apiError.message,
+          details: apiError.response?.data || null
+        });
+      }
     }
     
   } catch (error) {
-    console.error('❌ COINBASE CRYPTO BALANCES ERROR:', error);
-    res.status(500).json({ error: 'Failed to get Coinbase cryptocurrency balances' });
+          console.error('❌ BINANCE CRYPTO BALANCES ERROR:', error);
+          res.status(500).json({ error: 'Failed to get Binance cryptocurrency balances' });
   }
 });
 
@@ -3227,17 +3248,17 @@ app.get('/api/mesh/coinbase-complete-balance', async (req, res) => {
       res.json(results);
       
     } catch (apiError) {
-      console.error('❌ COINBASE COMPLETE BALANCE API ERROR:', apiError.message);
+      console.error('❌ BINANCE COMPLETE BALANCE API ERROR:', apiError.message);
       res.status(500).json({
-        error: 'Failed to get complete balance from Coinbase',
+                  error: 'Failed to get complete balance from Binance',
         message: apiError.message,
         details: apiError.response?.data || null
       });
     }
     
   } catch (error) {
-    console.error('❌ COINBASE COMPLETE BALANCE ERROR:', error);
-    res.status(500).json({ error: 'Failed to get Coinbase complete balance' });
+          console.error('❌ BINANCE COMPLETE BALANCE ERROR:', error);
+          res.status(500).json({ error: 'Failed to get Binance complete balance' });
   }
 });
 
