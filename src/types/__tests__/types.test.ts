@@ -98,7 +98,7 @@ describe('TypeScript Types and Interfaces', () => {
         id: 'transfer_1',
         fromAccount: 'account_1',
         toAccount: '0x1234567890123456789012345678901234567890',
-        amount: 5,
+        amount: 1,
         currency: 'USDC',
         network: 'base',
         status: 'completed',
@@ -106,7 +106,7 @@ describe('TypeScript Types and Interfaces', () => {
       };
 
       expect(transfer.id).toBe('transfer_1');
-      expect(transfer.amount).toBe(5);
+      expect(transfer.amount).toBe(1);
       expect(transfer.currency).toBe('USDC');
       expect(transfer.network).toBe('base');
       expect(transfer.status).toBe('completed');

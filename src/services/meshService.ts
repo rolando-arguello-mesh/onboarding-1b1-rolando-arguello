@@ -346,6 +346,17 @@ export class MeshService {
     }
   }
 
+  // Get cryptocurrency balances from Phantom Wallet
+  static async getPhantomCryptoBalances(): Promise<any> {
+    try {
+      const response = await api.get('/phantom-crypto-balances');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting Phantom crypto balances:', error);
+      throw new Error('Failed to get Phantom crypto balances');
+    }
+  }
+
   // Get cryptocurrency balances for any connected account
   static async getCryptoBalances(connectionId: string): Promise<any> {
     try {
@@ -368,9 +379,29 @@ export class MeshService {
     }
   }
 
+  // Get USDC balance from Coinbase
+  static async getCoinbaseUSDCBalance(): Promise<any> {
+    try {
+      const response = await api.get('/coinbase-usdc');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting Coinbase USDC balance:', error);
+      throw new Error('Failed to get Coinbase USDC balance');
+    }
+  }
 
+  // Get USDC balance from Phantom Wallet
+  static async getPhantomUSDCBalance(): Promise<any> {
+    try {
+      const response = await api.get('/phantom-usdc');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting Phantom USDC balance:', error);
+      throw new Error('Failed to get Phantom USDC balance');
+    }
+  }
 
-  // Get USDC balance specifically
+  // Get USDC balance specifically (generic method for backward compatibility)
   static async getUSDCBalance(connectionId: string): Promise<any> {
     try {
       const response = await api.post('/usdc-balance', { connectionId });

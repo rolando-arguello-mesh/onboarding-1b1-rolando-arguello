@@ -40,7 +40,7 @@ const mockTransfer: MeshTransfer = {
   id: 'transfer_1',
   fromAccount: 'account_1',
   toAccount: '0x1234567890123456789012345678901234567890',
-  amount: 5,
+  amount: 1,
   currency: 'USDC',
   network: 'base',
   status: 'completed',
@@ -145,7 +145,7 @@ describe('MeshService', () => {
     test('should execute transfer successfully with default parameters', async () => {
       const fromConnectionId = 'connection_123';
       const toAddress = '0x1234567890123456789012345678901234567890';
-      const amount = 5;
+      const amount = 1;
       
       mockAxiosInstance.post.mockResolvedValue({
         data: { transfer: mockTransfer }
@@ -189,7 +189,7 @@ describe('MeshService', () => {
     test('should handle execute transfer error', async () => {
       const fromConnectionId = 'connection_123';
       const toAddress = '0x1234567890123456789012345678901234567890';
-      const amount = 5;
+      const amount = 1;
       const error = new Error('Network error');
       
       mockAxiosInstance.post.mockRejectedValue(error);

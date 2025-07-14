@@ -304,6 +304,50 @@ body {
   margin-top: 15px;
 }
 
+/* Transfer Amount Input */
+.transfer-amount-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.transfer-amount-input label {
+  color: #00FF41;
+  font-size: 0.9em;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.transfer-amount-input input {
+  padding: 12px 15px;
+  border: 2px solid #00FF41;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #00FF41;
+  font-family: "Tektur", sans-serif;
+  font-size: 1em;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.transfer-amount-input input:focus {
+  outline: none;
+  border-color: #00C853;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.transfer-amount-input input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.transfer-amount-input input::placeholder {
+  color: rgba(0, 255, 65, 0.5);
+}
+
 .transfer-btn {
   background: linear-gradient(45deg, #00FF41, #00C853);
   color: #000000;

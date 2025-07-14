@@ -17,6 +17,7 @@ function App() {
   const [savedConnections, setSavedConnections] = useState<{ [key: string]: any }>({});
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferSuccess, setTransferSuccess] = useState<MeshTransfer | null>(null);
+  const [transferAmount, setTransferAmount] = useState<number>(1); // Default to 1 USDC
 
   // Check for existing saved connections on app load
   useEffect(() => {
@@ -49,7 +50,7 @@ function App() {
           try {
             await MeshService.restoreConnection(coinbaseCheck.connectionId!, coinbaseCheck.connection);
             loadCryptoBalances(restoredConnection);
-            loadUSDCBalance(restoredConnection.id);
+            loadUSDCBalanceByProvider(restoredConnection);
           } catch (error) {
             console.error('❌ Failed to restore Coinbase connection:', error);
             // Clear invalid connection
@@ -73,7 +74,7 @@ function App() {
           try {
             await MeshService.restoreConnection(phantomCheck.connectionId!, phantomCheck.connection);
             loadCryptoBalances(restoredConnection);
-            loadUSDCBalance(restoredConnection.id);
+            loadUSDCBalanceByProvider(restoredConnection);
           } catch (error) {
             console.error('❌ Failed to restore Phantom connection:', error);
             // Clear invalid connection
@@ -95,16 +96,17 @@ function App() {
     try {
       console.log('🪙 Loading crypto balances for', currentConnection.provider, '...');
       
-      // Use different endpoints based on provider
+      // Use specific endpoints for each provider
       let balanceData;
       if (currentConnection.provider === 'coinbase') {
         balanceData = await MeshService.getCoinbaseCryptoBalances();
       } else if (currentConnection.provider === 'phantom') {
-        // For Phantom, we'll use the generic crypto balances endpoint
-        balanceData = await MeshService.getCryptoBalances(currentConnection.id);
+        // Use the new specific Phantom endpoint
+        balanceData = await MeshService.getPhantomCryptoBalances();
       } else {
         console.log('⚠️ Unknown provider for crypto balances:', currentConnection.provider);
-        return;
+        // Fallback to generic method for other providers
+        balanceData = await MeshService.getCryptoBalances(currentConnection.id);
       }
       
       setCryptoBalances(balanceData);
@@ -124,6 +126,34 @@ function App() {
       const usdcData = await MeshService.getUSDCBalance(connectionId);
       setUsdcBalance(usdcData);
       console.log('✅ USDC balance loaded successfully');
+    } catch (err: any) {
+      console.error('❌ Failed to load USDC balance:', err);
+      // Don't set error, just log it
+    }
+  };
+
+  // Load USDC balance using provider-specific endpoints
+  const loadUSDCBalanceByProvider = async (connectionToUse?: MeshConnection) => {
+    const currentConnection = connectionToUse || connection;
+    if (!currentConnection) return;
+    
+    try {
+      console.log('💰 Loading USDC balance for', currentConnection.provider, '...');
+      
+      // Use specific endpoints for each provider
+      let usdcData;
+      if (currentConnection.provider === 'coinbase') {
+        usdcData = await MeshService.getCoinbaseUSDCBalance();
+      } else if (currentConnection.provider === 'phantom') {
+        usdcData = await MeshService.getPhantomUSDCBalance();
+      } else {
+        console.log('⚠️ Unknown provider for USDC balance:', currentConnection.provider);
+        // Fallback to generic method
+        usdcData = await MeshService.getUSDCBalance(currentConnection.id);
+      }
+      
+      setUsdcBalance(usdcData);
+      console.log('✅ USDC balance loaded successfully for', currentConnection.provider);
     } catch (err: any) {
       console.error('❌ Failed to load USDC balance:', err);
       // Don't set error, just log it
@@ -168,7 +198,7 @@ function App() {
         setTimeout(() => {
           loadPortfolio(newConnection.id);
           loadCryptoBalances(newConnection);
-          loadUSDCBalance(newConnection.id);
+          loadUSDCBalanceByProvider(newConnection);
         }, 2000);
         
         console.log('Coinbase connected successfully with ID:', result.connectionId);
@@ -210,7 +240,7 @@ function App() {
         setTimeout(() => {
           loadPortfolio(newConnection.id);
           loadCryptoBalances(newConnection);
-          loadUSDCBalance(newConnection.id);
+          loadUSDCBalanceByProvider(newConnection);
         }, 2000);
         
         console.log('Phantom Wallet connected successfully with ID:', result.connectionId);
@@ -290,10 +320,15 @@ function App() {
     }
   };
 
-  // Handle transfer of $5 USDC to app wallet using Mesh SDK (handles MFA automatically)
+  // Handle transfer of custom USDC amount to app wallet using Mesh SDK (handles MFA automatically)
   const handleTransfer = async () => {
     if (!connection || !appWalletAddress) {
       setError('Connection or app wallet address not available');
+      return;
+    }
+
+    if (transferAmount <= 0) {
+      setError('Transfer amount must be greater than 0');
       return;
     }
 
@@ -302,16 +337,16 @@ function App() {
     setTransferSuccess(null);
 
     try {
-      console.log('🚀 Executing transfer with Mesh SDK: $5 USDC to app wallet');
+      console.log(`🚀 Executing transfer with Mesh SDK: $${transferAmount} USDC to app wallet`);
       console.log('  - From:', connection.id);
       console.log('  - To:', appWalletAddress);
-      console.log('  - Amount: 5 USDC');
+      console.log(`  - Amount: ${transferAmount} USDC`);
       console.log('  - Network: Base');
 
       const result = await MeshService.executeTransferWithSDK(
         connection.id,
         appWalletAddress,
-        5,
+        transferAmount,
         'USDC',
         'base'
       );
@@ -324,7 +359,7 @@ function App() {
         // Create a success object for display
         const successTransfer = {
           id: 'sdk_transfer_' + Date.now(),
-          amount: 5,
+          amount: transferAmount,
           currency: 'USDC',
           network: 'base',
           status: 'completed' as const,
@@ -339,7 +374,7 @@ function App() {
         // Refresh balances after transfer
         setTimeout(() => {
           loadCryptoBalances(connection);
-          loadUSDCBalance(connection.id);
+          loadUSDCBalanceByProvider(connection);
         }, 2000);
       } else {
         console.error('❌ Transfer failed:', result.error);
@@ -435,7 +470,7 @@ function App() {
                                     // Load data for restored connection
                                     setTimeout(() => {
                                       loadCryptoBalances(restoredConnection);
-                                      loadUSDCBalance(restoredConnection.id);
+                                      loadUSDCBalanceByProvider(restoredConnection);
                                     }, 500);
                                   }}
                                 >
@@ -515,14 +550,27 @@ function App() {
                         </div>
                       </div>
                       <div className="connection-actions">
+                        <div className="transfer-amount-input">
+                          <label htmlFor="transferAmount">💰 Transfer Amount (USDC):</label>
+                          <input
+                            id="transferAmount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={transferAmount}
+                            onChange={(e) => setTransferAmount(parseFloat(e.target.value) || 0)}
+                            placeholder="Enter amount..."
+                            disabled={transferLoading}
+                          />
+                        </div>
                         <button 
                           className="transfer-btn"
                           onClick={handleTransfer}
-                          disabled={transferLoading || !appWalletAddress}
+                          disabled={transferLoading || !appWalletAddress || transferAmount <= 0}
                         >
                           {transferLoading ? '�� Transferring...' : 
-                           connection.type === 'cex' ? '💸 Transfer $5 USDC to App' : 
-                           '💸 Transfer $5 USDC to App (via Phantom)'}
+                           connection.type === 'cex' ? `💸 Transfer $${transferAmount} USDC to App` : 
+                           `💸 Transfer $${transferAmount} USDC to App (via Phantom)`}
                         </button>
                         
                         {/* Add helpful note about transfer experience */}

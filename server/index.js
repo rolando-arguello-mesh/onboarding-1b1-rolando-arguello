@@ -687,13 +687,15 @@ app.post('/api/mesh/link-token', async (req, res) => {
     }
     
     // Get the correct integration ID based on broker type
+    const brokerName = connectionData.accessToken?.brokerName;
     let integrationId;
     if (brokerType === 'coinbase') {
       integrationId = '47624467-e52e-4938-a41a-7926b6c27acf'; // Coinbase integration ID
-    } else if (brokerType === 'phantom') {
+    } else if (brokerType === 'phantom' || brokerType === 'deFiWallet' || brokerName === 'Phantom') {
       integrationId = '757e703f-a8fe-4dc4-d0ec-08dc6737ad96'; // Phantom integration ID
     } else {
-      return res.status(400).json({ error: 'Unsupported broker type for transfers' });
+      console.error('❌ Unsupported broker type for transfers:', { brokerType, brokerName });
+      return res.status(400).json({ error: `Unsupported broker type for transfers: ${brokerType} (${brokerName})` });
     }
     
     // Generate link token with transfer options
@@ -2230,6 +2232,347 @@ app.get('/api/mesh/coinbase-crypto-balances', async (req, res) => {
   } catch (error) {
     console.error('❌ COINBASE CRYPTO BALANCES ERROR:', error);
     res.status(500).json({ error: 'Failed to get Coinbase cryptocurrency balances' });
+  }
+});
+
+// Get all cryptocurrency balances from Phantom Wallet
+app.get('/api/mesh/phantom-crypto-balances', async (req, res) => {
+  try {
+    console.log('👻 PHANTOM CRYPTO BALANCES REQUEST - Looking for Phantom connections...');
+    
+    // Find the most recent Phantom connection
+    let phantomConnection = null;
+    let mostRecentTime = 0;
+    
+    for (const [connectionId, connectionData] of connectedAccounts.entries()) {
+      const brokerType = connectionData.accessToken?.brokerType;
+      const brokerName = connectionData.accessToken?.brokerName;
+      const isPhantom = brokerType === 'phantom' || brokerType === 'deFiWallet' || brokerName === 'Phantom';
+      
+      if (isPhantom) {
+        const connectedTime = new Date(connectionData.connectedAt).getTime();
+        if (connectedTime > mostRecentTime) {
+          mostRecentTime = connectedTime;
+          phantomConnection = { connectionId, ...connectionData };
+        }
+      }
+    }
+    
+    if (!phantomConnection) {
+      console.log('⚠️ No Phantom connections found');
+      return res.status(404).json({ error: 'No Phantom connection found. Please connect your Phantom wallet first.' });
+    }
+    
+    console.log('👻 PHANTOM CRYPTO BALANCES - Using connection:', phantomConnection.connectionId);
+    console.log('👻 PHANTOM CRYPTO BALANCES - BrokerType:', phantomConnection.accessToken?.brokerType);
+    console.log('👻 PHANTOM CRYPTO BALANCES - BrokerName:', phantomConnection.accessToken?.brokerName);
+    
+    // Get crypto balances using the found connection
+    const realAccessToken = phantomConnection.accessToken?.accountTokens?.[0]?.accessToken;
+    const brokerType = phantomConnection.accessToken?.brokerType;
+    
+    if (!realAccessToken) {
+      console.log('⚠️ No access token found for Phantom connection');
+      return res.status(400).json({ error: 'No access token found for Phantom connection' });
+    }
+    
+    try {
+      console.log('👻 GETTING ALL PHANTOM CRYPTO BALANCES...');
+      console.log('👻 USING BROKER TYPE:', brokerType);
+      
+      // Make the API call to Mesh Connect using the correct broker type for Phantom
+      const response = await meshAPI.post('/api/v1/holdings/get', {
+        authToken: realAccessToken,
+        type: brokerType, // Should be 'deFiWallet' for Phantom
+        includeMarketValue: true
+      });
+      
+      console.log('👻 MESH API RESPONSE STATUS:', response.status);
+      console.log('👻 FULL MESH API RESPONSE:', JSON.stringify(response.data, null, 2));
+      
+      // Extract cryptocurrency positions from the response
+      const content = response.data.content || {};
+      const cryptoPositions = content.cryptocurrencyPositions || [];
+      
+      console.log('👻 TOTAL CRYPTOCURRENCY POSITIONS FOUND:', cryptoPositions.length);
+      console.log('👻 CRYPTOCURRENCYPOSITIONS CONTENT FOR PHANTOM:');
+      
+      // Process all cryptocurrency positions
+      let totalCryptoValue = 0;
+      const cryptoBalances = [];
+      
+      cryptoPositions.forEach((position, index) => {
+        const symbol = position.symbol?.trim() || 'UNKNOWN';
+        const name = position.name?.trim() || position.symbol || 'Unknown';
+        const amount = parseFloat(position.amount || 0);
+        const marketValue = parseFloat(position.marketValue || 0);
+        const lastPrice = parseFloat(position.lastPrice || 0);
+        const costBasis = parseFloat(position.costBasis || 0);
+        
+        totalCryptoValue += marketValue;
+        
+        // Log each position clearly
+        console.log(`  👻 ${index + 1}. ${symbol} (${name})`);
+        console.log(`     Amount: ${amount}`);
+        console.log(`     Market Value: $${marketValue.toFixed(2)}`);
+        console.log(`     Last Price: $${lastPrice.toFixed(2)}`);
+        console.log(`     Cost Basis: $${costBasis.toFixed(2)}`);
+        console.log(`     P&L: $${(marketValue - costBasis).toFixed(2)}`);
+        console.log(`     Network: ${position.network || 'N/A'}`);
+        console.log(`     ---`);
+        
+        cryptoBalances.push({
+          symbol: symbol,
+          name: name,
+          amount: amount,
+          marketValue: marketValue,
+          lastPrice: lastPrice,
+          costBasis: costBasis,
+          pnl: marketValue - costBasis,
+          network: position.network || 'solana', // Default to Solana for Phantom
+          accountId: position.accountId || 'unknown',
+          // Formatted values for display
+          formattedAmount: `${amount.toFixed(6)} ${symbol}`,
+          formattedValue: `$${marketValue.toFixed(2)}`,
+          formattedPrice: `$${lastPrice.toFixed(2)}`,
+          formattedPnL: `$${(marketValue - costBasis).toFixed(2)}`,
+          // Additional data from API
+          rawPosition: position
+        });
+      });
+      
+      console.log('👻 TOTAL CRYPTO PORTFOLIO VALUE: $', totalCryptoValue.toFixed(2));
+      console.log('👻 TOTAL CRYPTO POSITIONS COUNT:', cryptoBalances.length);
+      
+      // Also log any other types of positions for reference
+      const equityPositions = content.equityPositions || [];
+      const nftPositions = content.nftPositions || [];
+      const optionPositions = content.optionPositions || [];
+      
+      console.log('👻 PORTFOLIO BREAKDOWN:');
+      console.log(`  - Cryptocurrency Positions: ${cryptoPositions.length}`);
+      console.log(`  - Equity Positions: ${equityPositions.length}`);
+      console.log(`  - NFT Positions: ${nftPositions.length}`);
+      console.log(`  - Option Positions: ${optionPositions.length}`);
+      
+      // If no crypto positions found, show the full response structure
+      if (cryptoPositions.length === 0) {
+        console.log('👻 NO CRYPTO POSITIONS FOUND - Full response structure:');
+        console.log(JSON.stringify(response.data, null, 2));
+        
+        // For Phantom, also try to get account info or balances through alternative methods
+        console.log('👻 ATTEMPTING ALTERNATIVE PHANTOM BALANCE RETRIEVAL...');
+        
+        try {
+          // Try using different endpoint structures for DeFi wallets
+          const alternativeResponse = await meshAPI.post('/api/v1/balance/get', {
+            authToken: realAccessToken,
+            type: brokerType
+          });
+          
+          console.log('👻 ALTERNATIVE BALANCE RESPONSE:', JSON.stringify(alternativeResponse.data, null, 2));
+        } catch (altError) {
+          console.log('👻 Alternative balance call failed:', altError.message);
+        }
+      }
+      
+      res.json({
+        success: true,
+        connectionId: phantomConnection.connectionId,
+        brokerType: brokerType,
+        brokerName: phantomConnection.accessToken?.brokerName || 'Phantom',
+        summary: {
+          totalCryptoValue: totalCryptoValue,
+          totalPositions: cryptoBalances.length,
+          formattedTotalValue: `$${totalCryptoValue.toFixed(2)}`
+        },
+        cryptocurrencyPositions: cryptoBalances,
+        otherPositions: {
+          equityCount: equityPositions.length,
+          nftCount: nftPositions.length,
+          optionCount: optionPositions.length
+        },
+        timestamp: new Date().toISOString(),
+        debug: {
+          fullApiResponse: response.data,
+          connectionDetails: {
+            brokerType: brokerType,
+            brokerName: phantomConnection.accessToken?.brokerName,
+            hasAccessToken: !!realAccessToken
+          }
+        }
+      });
+      
+    } catch (apiError) {
+      console.error('❌ PHANTOM CRYPTO BALANCES API ERROR:', apiError.message);
+      console.error('❌ PHANTOM CRYPTO BALANCES API DETAILS:', apiError.response?.data || apiError);
+      
+      res.status(500).json({
+        error: 'Failed to get cryptocurrency balances from Phantom',
+        message: apiError.message,
+        details: apiError.response?.data || null,
+        brokerType: brokerType,
+        debug: {
+          connectionId: phantomConnection.connectionId,
+          hasAccessToken: !!realAccessToken,
+          brokerType: brokerType
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ PHANTOM CRYPTO BALANCES ERROR:', error);
+    res.status(500).json({ error: 'Failed to get Phantom cryptocurrency balances' });
+  }
+});
+
+// Get USDC balance from the most recent Phantom connection
+app.get('/api/mesh/phantom-usdc', async (req, res) => {
+  try {
+    console.log('👻 PHANTOM USDC REQUEST - Looking for Phantom connections...');
+    
+    // Find the most recent Phantom connection
+    let phantomConnection = null;
+    let mostRecentTime = 0;
+    
+    for (const [connectionId, connectionData] of connectedAccounts.entries()) {
+      const brokerType = connectionData.accessToken?.brokerType;
+      const brokerName = connectionData.accessToken?.brokerName;
+      const isPhantom = brokerType === 'phantom' || brokerType === 'deFiWallet' || brokerName === 'Phantom';
+      
+      if (isPhantom) {
+        const connectedTime = new Date(connectionData.connectedAt).getTime();
+        if (connectedTime > mostRecentTime) {
+          mostRecentTime = connectedTime;
+          phantomConnection = { connectionId, ...connectionData };
+        }
+      }
+    }
+    
+    if (!phantomConnection) {
+      console.log('⚠️ No Phantom connections found');
+      return res.status(404).json({ error: 'No Phantom connection found. Please connect your Phantom wallet first.' });
+    }
+    
+    console.log('👻 PHANTOM USDC - Using connection:', phantomConnection.connectionId);
+    
+    // Get USDC balance using the found connection
+    const realAccessToken = phantomConnection.accessToken?.accountTokens?.[0]?.accessToken;
+    const brokerType = phantomConnection.accessToken?.brokerType;
+    
+    if (!realAccessToken) {
+      console.log('⚠️ No access token found for Phantom connection');
+      return res.status(400).json({ error: 'No access token found for Phantom connection' });
+    }
+    
+    try {
+      console.log('👻 GETTING PHANTOM USDC BALANCE...');
+      
+      // Make the API call to Mesh Connect
+      const response = await meshAPI.post('/api/v1/holdings/get', {
+        authToken: realAccessToken,
+        type: brokerType,
+        includeMarketValue: true
+      });
+      
+      const cryptoPositions = response.data.content?.cryptocurrencyPositions || [];
+      
+      console.log('👻 PHANTOM - TOTAL CRYPTO POSITIONS:', cryptoPositions.length);
+      
+      // Enhanced USDC filtering for Phantom - Solana USDC variations
+      const usdcVariations = [
+        'USDC', 'USD COIN', 'USD-C', 'USDCOIN', 'USD_COIN',
+        'usdc', 'usd coin', 'usd-c', 'usdcoin', 'usd_coin',
+        'USDC-SPL', 'SPL-USDC' // Solana-specific variations
+      ];
+      
+      const usdcPositions = cryptoPositions.filter(position => {
+        const symbol = position.symbol?.trim();
+        const name = position.name?.trim() || '';
+        
+        const symbolMatch = usdcVariations.some(variation => 
+          symbol?.toUpperCase() === variation.toUpperCase()
+        );
+        
+        const nameMatch = usdcVariations.some(variation => 
+          name?.toUpperCase().includes(variation.toUpperCase())
+        );
+        
+        return symbolMatch || nameMatch;
+      });
+      
+      // Calculate total USDC balance
+      let totalUSDC = 0;
+      const usdcDetails = [];
+      
+      usdcPositions.forEach(position => {
+        const amount = parseFloat(position.amount || 0);
+        const marketValue = parseFloat(position.marketValue || amount);
+        
+        totalUSDC += amount;
+        
+        usdcDetails.push({
+          symbol: position.symbol,
+          name: position.name || position.symbol,
+          amount: amount,
+          marketValue: marketValue,
+          formattedAmount: `${amount.toFixed(2)} USDC`,
+          formattedValue: `$${marketValue.toFixed(2)}`,
+          network: position.network || 'solana'
+        });
+      });
+      
+      console.log('👻 PHANTOM USDC BALANCE:', totalUSDC);
+      console.log('👻 PHANTOM USDC VALUE: $', totalUSDC.toFixed(2));
+      
+      // If no USDC found, list all available cryptocurrencies
+      if (usdcPositions.length === 0) {
+        const allCryptos = cryptoPositions.map(p => ({
+          symbol: p.symbol,
+          name: p.name || 'N/A',
+          amount: p.amount,
+          marketValue: p.marketValue
+        }));
+        console.log('👻 ALL AVAILABLE CRYPTOCURRENCIES IN PHANTOM:', JSON.stringify(allCryptos, null, 2));
+      }
+      
+      res.json({
+        success: true,
+        connectionId: phantomConnection.connectionId,
+        brokerType: brokerType,
+        brokerName: 'Phantom',
+        usdc: {
+          totalBalance: totalUSDC,
+          totalValue: totalUSDC,
+          formattedBalance: `${totalUSDC.toFixed(2)} USDC`,
+          formattedValue: `$${totalUSDC.toFixed(2)}`,
+          positions: usdcDetails,
+          positionsCount: usdcPositions.length
+        },
+        allCryptos: cryptoPositions.map(p => ({
+          symbol: p.symbol,
+          name: p.name || 'N/A',
+          amount: p.amount,
+          marketValue: p.marketValue,
+          formattedValue: `$${(p.marketValue || 0).toFixed(2)}`
+        })),
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (apiError) {
+      console.error('❌ PHANTOM USDC API ERROR:', apiError.message);
+      console.error('❌ PHANTOM USDC API DETAILS:', apiError.response?.data || apiError);
+      
+      res.status(500).json({
+        error: 'Failed to get USDC balance from Phantom',
+        message: apiError.message,
+        details: apiError.response?.data || null
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ PHANTOM USDC ERROR:', error);
+    res.status(500).json({ error: 'Failed to get Phantom USDC balance' });
   }
 });
 

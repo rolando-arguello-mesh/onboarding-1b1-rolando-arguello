@@ -37,7 +37,7 @@ const mockTransfer = {
   transferId: 'transfer_1',
   fromAddress: 'account_1',
   toAddress: '0x1234567890123456789012345678901234567890',
-  amount: 5,
+  amount: 1,
   symbol: 'USDC',
   network: 'base',
   status: 'completed',
@@ -365,7 +365,7 @@ describe('Server API Endpoints', () => {
       const transferData = {
         fromConnectionId: 'connection_123',
         toAddress: '0x1234567890123456789012345678901234567890',
-        amount: 5
+        amount: 1
       };
       
       mockMeshAPI.post.mockResolvedValue({
@@ -382,7 +382,7 @@ describe('Server API Endpoints', () => {
         id: 'transfer_1',
         fromAccount: 'connection_123',
         toAccount: '0x1234567890123456789012345678901234567890',
-        amount: 5,
+        amount: 1,
         currency: 'USDC',
         network: 'base',
         status: 'completed',
@@ -391,7 +391,7 @@ describe('Server API Endpoints', () => {
       expect(mockMeshAPI.post).toHaveBeenCalledWith('/api/v1/transfers/managed', {
         fromAccountId: 'connection_123',
         toAddress: '0x1234567890123456789012345678901234567890',
-        amount: 5,
+        amount: 1,
         symbol: 'USDC',
         network: 'base'
       });
@@ -428,7 +428,7 @@ describe('Server API Endpoints', () => {
       const transferData = {
         fromConnectionId: 'connection_123',
         toAddress: '0x1234567890123456789012345678901234567890',
-        amount: 5
+        amount: 1
       };
       
       mockMeshAPI.post.mockRejectedValue(new Error('API Error'));
@@ -461,7 +461,7 @@ describe('Server API Endpoints', () => {
         id: 'transfer_1',
         fromAccount: 'account_1',
         toAccount: '0x1234567890123456789012345678901234567890',
-        amount: 5,
+        amount: 1,
         currency: 'USDC',
         network: 'base',
         status: 'completed',

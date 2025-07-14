@@ -200,7 +200,7 @@ describe('App Component', () => {
     test('does not show transfer section initially', () => {
       render(<App />);
       
-      expect(screen.queryByText('Transfer $5 USDC to App Wallet')).not.toBeInTheDocument();
+      expect(screen.queryByText('Transfer $1 USDC to App Wallet')).not.toBeInTheDocument();
     });
   });
 

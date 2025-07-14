@@ -5,7 +5,7 @@ A cryptocurrency wallet integration demo using Mesh Connect SDK for both Coinbas
 ## 🚀 Features
 
 - **Dual Wallet Support**: Connect both Coinbase and Phantom Wallet
-- **Automated Transfers**: Transfer $5 USDC from connected accounts to app wallet
+- **Automated Transfers**: Transfer $1 USDC from connected accounts to app wallet
 - **MFA Support**: Built-in two-factor authentication for Coinbase
 - **Real-time Portfolio**: View crypto balances and holdings
 - **Persistent Sessions**: Save connection tokens for future use
