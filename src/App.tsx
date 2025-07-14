@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MeshService } from './services/meshService';
-import { MeshConnection, MeshPortfolio, MeshTransfer, CryptoBalanceData, USDCBalanceData } from './types';
+import { MeshConnection, MeshPortfolio, MeshTransfer, CryptoBalanceData, USDCBalanceData, BaseBalanceData } from './types';
 import './App.css';
 
 // App with separate buttons for Binance and Phantom Wallet
@@ -10,6 +10,7 @@ function App() {
   const [portfolio, setPortfolio] = useState<MeshPortfolio | null>(null);
   const [cryptoBalances, setCryptoBalances] = useState<CryptoBalanceData | null>(null);
   const [usdcBalance, setUsdcBalance] = useState<USDCBalanceData | null>(null);
+  const [baseBalances, setBaseBalances] = useState<BaseBalanceData | null>(null);
   const [transfers, setTransfers] = useState<MeshTransfer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +52,7 @@ function App() {
             await MeshService.restoreConnection(binanceCheck.connectionId!, binanceCheck.connection);
             loadCryptoBalances(restoredConnection);
             loadUSDCBalanceByProvider(restoredConnection);
+            loadBaseBalances();
           } catch (error) {
             console.error('❌ Failed to restore Binance connection:', error);
             // Clear invalid connection
@@ -75,6 +77,7 @@ function App() {
             await MeshService.restoreConnection(phantomCheck.connectionId!, phantomCheck.connection);
             loadCryptoBalances(restoredConnection);
             loadUSDCBalanceByProvider(restoredConnection);
+            loadBaseBalances();
           } catch (error) {
             console.error('❌ Failed to restore Phantom connection:', error);
             // Clear invalid connection
@@ -160,18 +163,62 @@ function App() {
     }
   };
 
+  // Load Base network balances (USDT and ETH)
+  const loadBaseBalances = async () => {
+    try {
+      console.log('🔵 Loading Base network balances...');
+      const baseData = await MeshService.getBaseNetworkBalances();
+      setBaseBalances(baseData);
+      console.log('✅ Base network balances loaded successfully');
+    } catch (err: any) {
+      console.error('❌ Failed to load Base network balances:', err);
+      // Don't set error, just log it
+    }
+  };
+
   // Load app wallet address on mount
   useEffect(() => {
     const loadWalletAddress = async () => {
       try {
         const address = await MeshService.getAppWalletAddress();
         setAppWalletAddress(address);
-      } catch (err) {
-        console.error('Failed to load app wallet address:', err);
+        console.log('✅ App wallet address loaded:', address);
+      } catch (err: any) {
+        console.error('❌ Failed to load app wallet address:', err);
+        setError('Failed to load app wallet address');
       }
     };
+
     loadWalletAddress();
   }, []);
+
+  // Reload all balances manually
+  const reloadAllBalances = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Reloading all balances...');
+      
+      // Reload connection-specific balances
+      if (connection) {
+        await loadCryptoBalances(connection);
+        await loadUSDCBalanceByProvider(connection);
+      }
+      
+      // Reload Base network balances
+      await loadBaseBalances();
+      
+      // Reload app wallet balances
+      // const updatedAppBalances = await MeshService.getAppWalletBalances(); // This line is removed
+      // setAppWalletBalances(updatedAppBalances); // This line is removed
+      
+      console.log('✅ All balances reloaded successfully');
+    } catch (err: any) {
+      console.error('❌ Failed to reload all balances:', err);
+      setError('Failed to reload balances');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Handle Binance connection
   const handleConnectBinance = async () => {
@@ -199,6 +246,7 @@ function App() {
           loadPortfolio(newConnection.id);
           loadCryptoBalances(newConnection);
           loadUSDCBalanceByProvider(newConnection);
+          loadBaseBalances();
         }, 2000);
         
         console.log('Binance connected successfully with ID:', result.connectionId);
@@ -241,6 +289,7 @@ function App() {
           loadPortfolio(newConnection.id);
           loadCryptoBalances(newConnection);
           loadUSDCBalanceByProvider(newConnection);
+          loadBaseBalances();
         }, 2000);
         
         console.log('Phantom Wallet connected successfully with ID:', result.connectionId);
@@ -371,11 +420,18 @@ function App() {
         
         setTransferSuccess(successTransfer);
         
-        // Refresh balances after transfer
-        setTimeout(() => {
-          loadCryptoBalances(connection);
-          loadUSDCBalanceByProvider(connection);
-        }, 2000);
+        // Reload balances after successful transfer
+        loadCryptoBalances(connection);
+        loadUSDCBalanceByProvider(connection);
+        
+        // Reload app wallet balances to show received transfers
+        try {
+          const updatedAppBalances = await MeshService.getAppWalletBalances();
+          // setAppWalletBalances(updatedAppBalances); // This line is removed
+          console.log('✅ App wallet balances reloaded after transfer');
+        } catch (err) {
+          console.error('❌ Failed to reload app wallet balances:', err);
+        }
       } else {
         console.error('❌ Transfer failed:', result.error);
         setError(`Transfer failed: ${result.error}`);
@@ -408,30 +464,21 @@ function App() {
           </div>
         )}
 
-        {/* Two Column Layout */}
-        <div className="dashboard-layout">
-          
-          {/* Left Column - App Wallet */}
-          <div className="left-column">
-            <div className="app-wallet">
-              <h3>App Wallet Address</h3>
-              <div className="wallet-address">
-                {appWalletAddress || 'Loading...'}
-              </div>
-            </div>
-            
-            {/* App Wallet Balance Section - Placeholder for future implementation */}
-            <div className="app-wallet-balance">
-              <h3>💼 App Wallet Balance</h3>
-              <div className="balance-placeholder">
-                <p>Connect accounts to start receiving transfers</p>
-                <div className="balance-value">$0.00</div>
-              </div>
+        {/* Full Width App Wallet */}
+        <div className="app-wallet-full-width">
+          <div className="app-wallet">
+            <h3>App Wallet Address</h3>
+            <div className="wallet-address">
+              {appWalletAddress || 'Loading...'}
             </div>
           </div>
+        </div>
 
-          {/* Right Column - Connected Accounts */}
-          <div className="right-column">
+        {/* Two Column Layout for Connections and Balances */}
+        <div className="dashboard-layout">
+          
+          {/* Left Column - Connected Accounts */}
+          <div className="left-column">
             <div className="connections-section">
               <h2>Connect Your Account</h2>
               <div className="connection-center">
@@ -467,11 +514,12 @@ function App() {
                                     };
                                     setConnection(restoredConnection);
                                     
-                                    // Load data for restored connection
-                                    setTimeout(() => {
-                                      loadCryptoBalances(restoredConnection);
-                                      loadUSDCBalanceByProvider(restoredConnection);
-                                    }, 500);
+                                                        // Load data for restored connection
+                    setTimeout(() => {
+                      loadCryptoBalances(restoredConnection);
+                      loadUSDCBalanceByProvider(restoredConnection);
+                      loadBaseBalances();
+                    }, 500);
                                   }}
                                 >
                                   Use Saved
@@ -528,27 +576,7 @@ function App() {
                         </div>
                       )}
                       
-                      {/* Wallet Type Information */}
-                      <div className="wallet-type-info">
-                        <h4>
-                          {connection.type === 'cex' ? '🏦 Centralized Exchange' : '👻 Self-Custody Wallet'}
-                        </h4>
-                        <div className="wallet-type-description">
-                          {connection.type === 'cex' ? (
-                            <>
-                              <p><strong>✅ Automated Transfers:</strong> Mesh handles everything automatically</p>
-                              <p><strong>🔐 MFA Support:</strong> Built-in 2FA verification</p>
-                              <p><strong>⚡ Quick Process:</strong> Complete transfer in one modal</p>
-                            </>
-                          ) : (
-                            <>
-                              <p><strong>🔗 Wallet Integration:</strong> Redirects to your Phantom wallet</p>
-                              <p><strong>🔒 Your Control:</strong> You approve the transaction directly</p>
-                              <p><strong>🌐 On-Chain:</strong> Transaction broadcast to Solana network</p>
-                            </>
-                          )}
-                        </div>
-                      </div>
+
                       <div className="connection-actions">
                         <div className="transfer-amount-input">
                           <label htmlFor="transferAmount">💰 Transfer Amount (USDC):</label>
@@ -573,15 +601,7 @@ function App() {
                            `💸 Transfer $${transferAmount} USDC to App (via Phantom)`}
                         </button>
                         
-                        {/* Add helpful note about transfer experience */}
-                        <div className="transfer-note">
-                          <p>
-                            <strong>💡 Transfer Process:</strong> 
-                            {connection.type === 'cex' ? 
-                              ' Mesh will handle the transfer directly from your Binance account.' :
-                              ' You\'ll be redirected to your Phantom wallet to approve the transfer.'}
-                          </p>
-                        </div>
+
                         
                         <button 
                           className="disconnect-btn"
@@ -609,6 +629,14 @@ function App() {
                           }}
                         >
                           🗑️ Clear Saved Tokens
+                        </button>
+                        
+                        <button 
+                          className="reload-balances-btn"
+                          onClick={reloadAllBalances}
+                          disabled={loading}
+                        >
+                          {loading ? '🔄 Loading...' : '🔄 Reload All Balances'}
                         </button>
                       </div>
                       
@@ -649,26 +677,33 @@ function App() {
                 )}
               </div>
             </div>
+          </div>
 
-            {/* USDC Balance Highlight */}
-            {usdcBalance && (
-              <div className="usdc-balance-section">
-                <h3>💰 USDC Balance</h3>
-                <div className="usdc-summary">
-                  <div className="usdc-amount">
-                    {usdcBalance.usdc.formattedBalance}
-                  </div>
-                  <div className="usdc-value">
-                    {usdcBalance.usdc.formattedValue}
-                  </div>
-                </div>
-              </div>
-            )}
-
+          {/* Right Column - Crypto Balances */}
+          <div className="right-column">
             {/* Crypto Balances Display */}
             {cryptoBalances && (
               <div className="crypto-balances-section">
-                <h2>💰 Cryptocurrency Balances</h2>
+                <h2>👻 Phantom Wallet - All Token Balances</h2>
+                <div className="wallet-info">
+                  <div className="wallet-provider">
+                    <span className="provider-label">Provider:</span>
+                    <span className="provider-name">{cryptoBalances.brokerName || 'Phantom'}</span>
+                  </div>
+                  <div className="wallet-type">
+                    <span className="type-label">Type:</span>
+                    <span className="type-name">{cryptoBalances.brokerType || 'DeFi Wallet'}</span>
+                  </div>
+                  <div className="wallet-network">
+                    <span className="network-label">Network:</span>
+                    <span className="network-name">Solana</span>
+                  </div>
+                  <div className="wallet-connection">
+                    <span className="connection-label">Connection ID:</span>
+                    <span className="connection-id">{cryptoBalances.connectionId?.substring(0, 8)}...</span>
+                  </div>
+                </div>
+                
                 <div className="crypto-summary">
                   <div className="total-value">
                     <h3>Total Portfolio Value</h3>
@@ -676,42 +711,57 @@ function App() {
                       {cryptoBalances.summary.formattedTotalValue}
                     </div>
                     <div className="positions-count">
-                      {cryptoBalances.summary.totalPositions} positions
+                      {cryptoBalances.summary.totalPositions} tokens with balance
                     </div>
                   </div>
                 </div>
                 
-                <div className="crypto-positions">
-                  <h3>Your Positions</h3>
-                  <div className="positions-list">
-                    {cryptoBalances.cryptocurrencyPositions.map((position, index) => (
-                      <div key={position.symbol} className="position-card">
-                        <div className="position-header">
-                          <h4>{position.symbol}</h4>
-                          <span className="position-name">{position.name}</span>
+                {cryptoBalances.cryptocurrencyPositions && cryptoBalances.cryptocurrencyPositions.length > 0 ? (
+                  <div className="crypto-positions">
+                    <h3>Your Token Holdings</h3>
+                    <div className="positions-list">
+                      {cryptoBalances.cryptocurrencyPositions.map((position: any, index: number) => (
+                        <div key={`${position.symbol}-${index}`} className="position-card">
+                          <div className="position-header">
+                            <h4>{position.symbol}</h4>
+                            <span className="position-name">{position.name}</span>
+                            <span className="position-network">{position.network}</span>
+                          </div>
+                          <div className="position-details">
+                            <div className="position-amount">
+                              <span className="label">Amount:</span>
+                              <span className="value">{position.formattedAmount}</span>
+                            </div>
+                            <div className="position-value">
+                              <span className="label">Market Value:</span>
+                              <span className="value">{position.formattedValue}</span>
+                            </div>
+                            <div className="position-price">
+                              <span className="label">Price per Token:</span>
+                              <span className="value">{position.formattedPrice}</span>
+                            </div>
+                            <div className={`position-pnl ${position.pnl >= 0 ? 'positive' : 'negative'}`}>
+                              <span className="label">P&L:</span>
+                              <span className="value">{position.formattedPnL}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="position-details">
-                          <div className="position-amount">
-                            <span className="label">Amount:</span>
-                            <span className="value">{position.formattedAmount}</span>
-                          </div>
-                          <div className="position-value">
-                            <span className="label">Value:</span>
-                            <span className="value">{position.formattedValue}</span>
-                          </div>
-                          <div className="position-price">
-                            <span className="label">Price:</span>
-                            <span className="value">{position.formattedPrice}</span>
-                          </div>
-                          <div className={`position-pnl ${position.pnl >= 0 ? 'positive' : 'negative'}`}>
-                            <span className="label">P&L:</span>
-                            <span className="value">{position.formattedPnL}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="no-balances">
+                    <h3>No Token Balances Found</h3>
+                    <p>Your Phantom wallet doesn't have any tokens with value, or the connection needs to be refreshed.</p>
+                    <button 
+                      className="reload-balances-btn"
+                      onClick={reloadAllBalances}
+                      disabled={loading}
+                    >
+                      {loading ? '🔄 Loading...' : '🔄 Refresh Balances'}
+                    </button>
+                  </div>
+                )}
                 
                 <div className="balance-timestamp">
                   <small>Last updated: {new Date(cryptoBalances.timestamp).toLocaleString()}</small>

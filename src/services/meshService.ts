@@ -725,6 +725,17 @@ export class MeshService {
     }
   }
 
+  // Get app wallet balances
+  static async getAppWalletBalances(): Promise<any> {
+    try {
+      const response = await axios.get('http://localhost:3005/api/app-wallet-balances');
+      return response.data.data;
+    } catch (error) {
+      console.error('Error getting app wallet balances:', error);
+      throw new Error('Failed to get app wallet balances');
+    }
+  }
+
   // Get app wallet address
   static async getAppWalletAddress(): Promise<string> {
     try {
@@ -733,6 +744,51 @@ export class MeshService {
     } catch (error) {
       console.error('Error getting app wallet address:', error);
       throw new Error('Failed to get app wallet address');
+    }
+  }
+
+  // Get Base network balances (USDT and ETH)
+  static async getBaseNetworkBalances(): Promise<any> {
+    try {
+      const response = await api.get('/base-balances');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting Base network balances:', error);
+      throw new Error('Failed to get Base network balances');
+    }
+  }
+
+  // Get specific token balance on Base network
+  static async getBaseTokenBalance(token: string, connectionId?: string): Promise<any> {
+    try {
+      const response = await api.post('/base-token-balance', {
+        token,
+        connectionId
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error getting ${token} balance on Base:`, error);
+      throw new Error(`Failed to get ${token} balance on Base network`);
+    }
+  }
+
+  // Get USDT balance on Base network
+  static async getBaseUSDTBalance(connectionId?: string): Promise<any> {
+    try {
+      return await this.getBaseTokenBalance('USDT', connectionId);
+    } catch (error) {
+      console.error('Error getting USDT balance on Base:', error);
+      throw new Error('Failed to get USDT balance on Base network');
+    }
+  }
+
+  // Get ETH balance on Base network
+  static async getBaseETHBalance(connectionId?: string): Promise<any> {
+    try {
+      return await this.getBaseTokenBalance('ETH', connectionId);
+    } catch (error) {
+      console.error('Error getting ETH balance on Base:', error);
+      throw new Error('Failed to get ETH balance on Base network');
     }
   }
 } 

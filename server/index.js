@@ -1530,6 +1530,182 @@ app.get('/api/wallet-address', (req, res) => {
   res.json({ address: APP_WALLET_ADDRESS });
 });
 
+// Get app wallet balances using Mesh Connect API
+app.get('/api/app-wallet-balances', async (req, res) => {
+  try {
+    console.log('💼 APP WALLET BALANCES - Getting real balances using Mesh Connect API...');
+    
+    // Find all connected accounts
+    const allBalances = [];
+    let totalValueUSD = 0;
+    
+    if (connectedAccounts.size === 0) {
+      console.log('⚠️ No connected accounts found');
+      return res.json({
+        success: true,
+        data: {
+          address: APP_WALLET_ADDRESS,
+          network: 'base',
+          balances: [],
+          summary: {
+            totalValue: 0,
+            formattedTotalValue: '$0.00',
+            totalTokens: 0
+          },
+          timestamp: new Date().toISOString(),
+          note: 'No connected accounts found. Connect Binance or Phantom to see balances.'
+        }
+      });
+    }
+    
+    console.log(`💼 Found ${connectedAccounts.size} connected accounts, getting balances...`);
+    
+    // Get balances for each connected account
+    for (const [connectionId, connectionData] of connectedAccounts.entries()) {
+      try {
+        const accessToken = connectionData.accessToken;
+        const brokerType = accessToken?.brokerType;
+        const brokerName = accessToken?.brokerName;
+        const realAccessToken = accessToken?.accountTokens?.[0]?.accessToken;
+        
+        if (!realAccessToken || !brokerType) {
+          console.log(`⚠️ Skipping ${connectionId} - missing access token or broker type`);
+          continue;
+        }
+        
+        console.log(`💼 Getting balances for ${brokerName || brokerType} (${connectionId})`);
+        
+        // Call Mesh Connect Balance API
+        const balanceResponse = await meshAPI.post('/api/v1/balance/get', {
+          authToken: realAccessToken,
+          type: brokerType
+        });
+        
+        if (balanceResponse.data.status === 'ok' && balanceResponse.data.content) {
+          const content = balanceResponse.data.content;
+          const balances = content.balances || [];
+          
+          console.log(`💼 ${brokerName || brokerType} balances:`, JSON.stringify(content, null, 2));
+          
+          // Process each balance
+          balances.forEach(balance => {
+            const currencyCode = balance.currencyCode || 'USD';
+            const cash = parseFloat(balance.cash || 0);
+            const buyingPower = parseFloat(balance.buyingPower || 0);
+            
+            // Add to total USD value
+            if (currencyCode === 'USD') {
+              totalValueUSD += cash;
+            } else {
+              // For non-USD currencies, use cash value (in a real app, you'd convert to USD)
+              totalValueUSD += cash;
+            }
+            
+            allBalances.push({
+              symbol: currencyCode,
+              name: getCurrencyName(currencyCode),
+              balance: cash.toString(),
+              formattedBalance: `${cash.toFixed(2)} ${currencyCode}`,
+              value: cash.toString(),
+              formattedValue: `$${cash.toFixed(2)}`,
+              network: getNetworkForBroker(brokerType),
+              provider: brokerName || brokerType,
+              buyingPower: buyingPower,
+              formattedBuyingPower: `${buyingPower.toFixed(2)} ${currencyCode}`,
+              connectionId: connectionId
+            });
+          });
+          
+          // Also add total cash and buying power if available
+          if (content.totalCashUsdValue !== undefined) {
+            totalValueUSD = parseFloat(content.totalCashUsdValue);
+          }
+          
+        } else {
+          console.log(`⚠️ Failed to get balances for ${brokerName || brokerType}:`, balanceResponse.data);
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error getting balances for ${connectionId}:`, error.message);
+        // Continue with other accounts even if one fails
+      }
+    }
+    
+    // Helper function to get currency name
+    function getCurrencyName(code) {
+      const currencyNames = {
+        'USD': 'US Dollar',
+        'EUR': 'Euro',
+        'GBP': 'British Pound',
+        'USDC': 'USD Coin',
+        'BTC': 'Bitcoin',
+        'ETH': 'Ethereum',
+        'SOL': 'Solana'
+      };
+      return currencyNames[code] || code;
+    }
+    
+    // Helper function to get network for broker
+    function getNetworkForBroker(brokerType) {
+      const networkMap = {
+        'binance': 'binance',
+        'binanceInternational': 'binance',
+        'phantom': 'solana',
+        'deFiWallet': 'solana',
+        'coinbase': 'coinbase'
+      };
+      return networkMap[brokerType] || 'unknown';
+    }
+    
+    const responseData = {
+      address: APP_WALLET_ADDRESS,
+      network: 'multi-chain',
+      balances: allBalances,
+      summary: {
+        totalValue: totalValueUSD,
+        formattedTotalValue: `$${totalValueUSD.toFixed(2)}`,
+        totalTokens: allBalances.length,
+        connectedAccounts: connectedAccounts.size
+      },
+      timestamp: new Date().toISOString(),
+      note: 'Real-time balances from Mesh Connect API'
+    };
+    
+    console.log('💼 MESH API BALANCES SUMMARY:');
+    console.log(`  - Total Accounts: ${connectedAccounts.size}`);
+    console.log(`  - Total Balances: ${allBalances.length}`);
+    console.log(`  - Total Value: $${totalValueUSD.toFixed(2)}`);
+    
+    res.json({
+      success: true,
+      data: responseData
+    });
+    
+  } catch (error) {
+    console.error('❌ APP WALLET BALANCES ERROR:', error.message);
+    console.error('❌ Full error:', error);
+    
+    // Fallback response
+    res.json({
+      success: false,
+      data: {
+        address: APP_WALLET_ADDRESS,
+        network: 'base',
+        balances: [],
+        summary: {
+          totalValue: 0.0,
+          formattedTotalValue: '$0.00',
+          totalTokens: 0
+        },
+        timestamp: new Date().toISOString(),
+        note: 'Failed to get balances from Mesh Connect API',
+        error: error.message
+      },
+      error: error.message
+    });
+  }
+});
+
 // Store access token after successful connection
 app.post('/api/mesh/store-connection', async (req, res) => {
   try {
@@ -1991,36 +2167,41 @@ app.post('/api/mesh/crypto-balances', async (req, res) => {
         const lastPrice = parseFloat(position.lastPrice || 0);
         const costBasis = parseFloat(position.costBasis || 0);
         
-        totalCryptoValue += marketValue;
-        
-        // Log each position clearly
-        console.log(`  ${index + 1}. ${symbol} (${name})`);
-        console.log(`     Amount: ${amount}`);
-        console.log(`     Market Value: $${marketValue.toFixed(2)}`);
-        console.log(`     Last Price: $${lastPrice.toFixed(2)}`);
-        console.log(`     Cost Basis: $${costBasis.toFixed(2)}`);
-        console.log(`     P&L: $${(marketValue - costBasis).toFixed(2)}`);
-        console.log(`     Network: ${position.network || 'N/A'}`);
-        console.log(`     ---`);
-        
-        cryptoBalances.push({
-          symbol: symbol,
-          name: name,
-          amount: amount,
-          marketValue: marketValue,
-          lastPrice: lastPrice,
-          costBasis: costBasis,
-          pnl: marketValue - costBasis,
-          network: position.network || 'unknown',
-          accountId: position.accountId || 'unknown',
-          // Formatted values for display
-          formattedAmount: `${amount.toFixed(6)} ${symbol}`,
-          formattedValue: `$${marketValue.toFixed(2)}`,
-          formattedPrice: `$${lastPrice.toFixed(2)}`,
-          formattedPnL: `$${(marketValue - costBasis).toFixed(2)}`,
-          // Additional data from API
-          rawPosition: position
-        });
+        // Only include positions with actual value (amount > 0 OR marketValue > 0)
+        if (amount > 0 || marketValue > 0) {
+          totalCryptoValue += marketValue;
+          
+          // Log each position clearly
+          console.log(`  👻 ${index + 1}. ${symbol} (${name})`);
+          console.log(`     Amount: ${amount}`);
+          console.log(`     Market Value: $${marketValue.toFixed(2)}`);
+          console.log(`     Last Price: $${lastPrice.toFixed(2)}`);
+          console.log(`     Cost Basis: $${costBasis.toFixed(2)}`);
+          console.log(`     P&L: $${(marketValue - costBasis).toFixed(2)}`);
+          console.log(`     Network: ${position.network || 'Solana'}`);
+          console.log(`     ---`);
+          
+          cryptoBalances.push({
+            symbol: symbol,
+            name: name,
+            amount: amount,
+            marketValue: marketValue,
+            lastPrice: lastPrice,
+            costBasis: costBasis,
+            pnl: marketValue - costBasis,
+            network: position.network || 'solana',
+            accountId: position.accountId || 'unknown',
+            // Formatted values for display
+            formattedAmount: `${amount.toFixed(6)} ${symbol}`,
+            formattedValue: `$${marketValue.toFixed(2)}`,
+            formattedPrice: `$${lastPrice.toFixed(6)}`,
+            formattedPnL: `$${(marketValue - costBasis).toFixed(2)}`,
+            // Additional data from API
+            rawPosition: position
+          });
+        } else {
+          console.log(`  ⚪ Skipping ${symbol} - no balance (amount: ${amount}, value: $${marketValue.toFixed(2)})`);
+        }
       });
       
       console.log('🪙 TOTAL CRYPTO PORTFOLIO VALUE: $', totalCryptoValue.toFixed(2));
@@ -2573,6 +2754,254 @@ app.get('/api/mesh/phantom-usdc', async (req, res) => {
   } catch (error) {
     console.error('❌ PHANTOM USDC ERROR:', error);
     res.status(500).json({ error: 'Failed to get Phantom USDC balance' });
+  }
+});
+
+// Get Base network balances (USDT and ETH) from connected accounts
+app.get('/api/mesh/base-balances', async (req, res) => {
+  try {
+    console.log('🔵 BASE NETWORK BALANCES REQUEST - Looking for connected accounts...');
+    
+    if (connectedAccounts.size === 0) {
+      return res.status(404).json({ error: 'No connected accounts found. Please connect an account first.' });
+    }
+    
+    const baseBalances = {
+      usdt: { totalBalance: 0, totalValue: 0, positions: [] },
+      eth: { totalBalance: 0, totalValue: 0, positions: [] },
+      totalValue: 0
+    };
+    
+    // Check all connected accounts for Base network tokens
+    for (const [connectionId, connectionData] of connectedAccounts.entries()) {
+      try {
+        const realAccessToken = connectionData.accessToken?.accountTokens?.[0]?.accessToken;
+        const brokerType = connectionData.accessToken?.brokerType;
+        const brokerName = connectionData.accessToken?.brokerName;
+        
+        if (!realAccessToken) {
+          console.log(`⚠️ Skipping ${connectionId} - missing access token`);
+          continue;
+        }
+        
+        console.log(`🔵 Checking Base balances for ${brokerName || brokerType} (${connectionId})`);
+        
+        // Make the API call to Mesh Connect
+        const response = await meshAPI.post('/api/v1/holdings/get', {
+          authToken: realAccessToken,
+          type: brokerType,
+          includeMarketValue: true
+        });
+        
+        const cryptoPositions = response.data.content?.cryptocurrencyPositions || [];
+        
+        // Filter for Base network tokens
+        cryptoPositions.forEach(position => {
+          const symbol = position.symbol?.trim().toUpperCase();
+          const network = position.network?.toLowerCase();
+          const amount = parseFloat(position.amount || 0);
+          const marketValue = parseFloat(position.marketValue || 0);
+          
+          // Check if this is a Base network token or if it's available on Base
+          const isBaseToken = network === 'base' || 
+                            network === 'base-mainnet' || 
+                            network === 'base-network' ||
+                            // Even if network isn't specified as 'base', these tokens are often available on Base
+                            (symbol === 'USDT' || symbol === 'ETH');
+          
+          if (isBaseToken && amount > 0) {
+            if (symbol === 'USDT' || symbol === 'USDT-BASE') {
+              baseBalances.usdt.totalBalance += amount;
+              baseBalances.usdt.totalValue += marketValue;
+              baseBalances.usdt.positions.push({
+                symbol: symbol,
+                name: position.name || 'Tether USD',
+                amount: amount,
+                marketValue: marketValue,
+                formattedAmount: `${amount.toFixed(2)} USDT`,
+                formattedValue: `$${marketValue.toFixed(2)}`,
+                network: 'base',
+                provider: brokerName || brokerType,
+                connectionId: connectionId
+              });
+            } else if (symbol === 'ETH' || symbol === 'WETH') {
+              baseBalances.eth.totalBalance += amount;
+              baseBalances.eth.totalValue += marketValue;
+              baseBalances.eth.positions.push({
+                symbol: symbol,
+                name: position.name || 'Ethereum',
+                amount: amount,
+                marketValue: marketValue,
+                formattedAmount: `${amount.toFixed(6)} ETH`,
+                formattedValue: `$${marketValue.toFixed(2)}`,
+                network: 'base',
+                provider: brokerName || brokerType,
+                connectionId: connectionId
+              });
+            }
+          }
+        });
+        
+      } catch (error) {
+        console.error(`❌ Error checking Base balances for ${connectionId}:`, error.message);
+        continue;
+      }
+    }
+    
+    // Calculate total value
+    baseBalances.totalValue = baseBalances.usdt.totalValue + baseBalances.eth.totalValue;
+    
+    // Format final balances
+    baseBalances.usdt.formattedBalance = `${baseBalances.usdt.totalBalance.toFixed(2)} USDT`;
+    baseBalances.usdt.formattedValue = `$${baseBalances.usdt.totalValue.toFixed(2)}`;
+    baseBalances.usdt.positionsCount = baseBalances.usdt.positions.length;
+    
+    baseBalances.eth.formattedBalance = `${baseBalances.eth.totalBalance.toFixed(6)} ETH`;
+    baseBalances.eth.formattedValue = `$${baseBalances.eth.totalValue.toFixed(2)}`;
+    baseBalances.eth.positionsCount = baseBalances.eth.positions.length;
+    
+    console.log('🔵 BASE NETWORK BALANCES SUMMARY:');
+    console.log(`  - USDT: ${baseBalances.usdt.formattedBalance} (${baseBalances.usdt.formattedValue})`);
+    console.log(`  - ETH: ${baseBalances.eth.formattedBalance} (${baseBalances.eth.formattedValue})`);
+    console.log(`  - Total Value: $${baseBalances.totalValue.toFixed(2)}`);
+    
+    res.json({
+      success: true,
+      network: 'base',
+      balances: baseBalances,
+      summary: {
+        totalValue: baseBalances.totalValue,
+        formattedTotalValue: `$${baseBalances.totalValue.toFixed(2)}`,
+        totalTokens: baseBalances.usdt.positionsCount + baseBalances.eth.positionsCount,
+        supportedTokens: ['USDT', 'ETH']
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ BASE BALANCES ERROR:', error);
+    res.status(500).json({ error: 'Failed to get Base network balances' });
+  }
+});
+
+// Get specific token balance on Base network
+app.post('/api/mesh/base-token-balance', async (req, res) => {
+  try {
+    const { token, connectionId } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Token parameter is required' });
+    }
+    
+    const tokenUpper = token.toUpperCase();
+    console.log(`🔵 BASE TOKEN BALANCE REQUEST - Token: ${tokenUpper}, Connection: ${connectionId || 'all'}`);
+    
+    // If connectionId is provided, check specific connection, otherwise check all
+    const connectionsToCheck = connectionId ? 
+      (connectedAccounts.has(connectionId) ? [connectionId] : []) : 
+      Array.from(connectedAccounts.keys());
+    
+    if (connectionsToCheck.length === 0) {
+      return res.status(404).json({ error: 'No valid connections found' });
+    }
+    
+    let totalBalance = 0;
+    let totalValue = 0;
+    const positions = [];
+    
+    for (const connId of connectionsToCheck) {
+      try {
+        const connectionData = connectedAccounts.get(connId);
+        const realAccessToken = connectionData.accessToken?.accountTokens?.[0]?.accessToken;
+        const brokerType = connectionData.accessToken?.brokerType;
+        const brokerName = connectionData.accessToken?.brokerName;
+        
+        if (!realAccessToken) continue;
+        
+        console.log(`🔵 Checking ${tokenUpper} balance for ${brokerName || brokerType}`);
+        
+        const response = await meshAPI.post('/api/v1/holdings/get', {
+          authToken: realAccessToken,
+          type: brokerType,
+          includeMarketValue: true
+        });
+        
+        const cryptoPositions = response.data.content?.cryptocurrencyPositions || [];
+        
+        // Find matching token positions
+        cryptoPositions.forEach(position => {
+          const symbol = position.symbol?.trim().toUpperCase();
+          const amount = parseFloat(position.amount || 0);
+          const marketValue = parseFloat(position.marketValue || 0);
+          
+          // Check if this matches the requested token
+          if (symbol === tokenUpper || 
+              (tokenUpper === 'USDT' && (symbol === 'USDT-BASE' || symbol === 'USDT')) ||
+              (tokenUpper === 'ETH' && (symbol === 'ETH' || symbol === 'WETH'))) {
+            
+            if (amount > 0) {
+              totalBalance += amount;
+              totalValue += marketValue;
+              
+              positions.push({
+                symbol: symbol,
+                name: position.name || getTokenName(tokenUpper),
+                amount: amount,
+                marketValue: marketValue,
+                formattedAmount: `${amount.toFixed(getTokenDecimals(tokenUpper))} ${tokenUpper}`,
+                formattedValue: `$${marketValue.toFixed(2)}`,
+                network: 'base',
+                provider: brokerName || brokerType,
+                connectionId: connId
+              });
+            }
+          }
+        });
+        
+      } catch (error) {
+        console.error(`❌ Error checking ${tokenUpper} balance for ${connId}:`, error.message);
+      }
+    }
+    
+    // Helper functions
+    function getTokenName(token) {
+      const tokenNames = {
+        'USDT': 'Tether USD',
+        'ETH': 'Ethereum',
+        'USDC': 'USD Coin',
+        'WETH': 'Wrapped Ethereum'
+      };
+      return tokenNames[token] || token;
+    }
+    
+    function getTokenDecimals(token) {
+      const tokenDecimals = {
+        'USDT': 2,
+        'USDC': 2,
+        'ETH': 6,
+        'WETH': 6
+      };
+      return tokenDecimals[token] || 2;
+    }
+    
+    console.log(`🔵 ${tokenUpper} BALANCE SUMMARY: ${totalBalance.toFixed(getTokenDecimals(tokenUpper))} ${tokenUpper} ($${totalValue.toFixed(2)})`);
+    
+    res.json({
+      success: true,
+      token: tokenUpper,
+      network: 'base',
+      totalBalance: totalBalance,
+      totalValue: totalValue,
+      formattedBalance: `${totalBalance.toFixed(getTokenDecimals(tokenUpper))} ${tokenUpper}`,
+      formattedValue: `$${totalValue.toFixed(2)}`,
+      positions: positions,
+      positionsCount: positions.length,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ BASE TOKEN BALANCE ERROR:', error);
+    res.status(500).json({ error: 'Failed to get Base token balance' });
   }
 });
 

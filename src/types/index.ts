@@ -97,6 +97,57 @@ export interface USDCBalanceData {
   timestamp: string;
 }
 
+export interface BaseTokenPosition {
+  symbol: string;
+  name: string;
+  amount: number;
+  marketValue: number;
+  formattedAmount: string;
+  formattedValue: string;
+  network: string;
+  provider: string;
+  connectionId: string;
+}
+
+export interface BaseTokenBalance {
+  totalBalance: number;
+  totalValue: number;
+  formattedBalance: string;
+  formattedValue: string;
+  positions: BaseTokenPosition[];
+  positionsCount: number;
+}
+
+export interface BaseBalanceData {
+  success: boolean;
+  network: string;
+  balances: {
+    usdt: BaseTokenBalance;
+    eth: BaseTokenBalance;
+    totalValue: number;
+  };
+  summary: {
+    totalValue: number;
+    formattedTotalValue: string;
+    totalTokens: number;
+    supportedTokens: string[];
+  };
+  timestamp: string;
+}
+
+export interface BaseTokenBalanceData {
+  success: boolean;
+  token: string;
+  network: string;
+  totalBalance: number;
+  totalValue: number;
+  formattedBalance: string;
+  formattedValue: string;
+  positions: BaseTokenPosition[];
+  positionsCount: number;
+  timestamp: string;
+}
+
 // App State Types
 export interface AppState {
   connections: MeshConnection[];
